@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Transaction {
+  id             Int      @id @default(autoincrement())
+  date           DateTime
+  amount         Float
+  type           String
+  category       String
+  sub_category   String   @default("")
+  merchant       String   @default("")
+  payment_method String   @default("")
+  note           String   @default("")
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  @@index([date])
+  @@index([type])
+  @@index([category])
+}
+
+model CategoryOption {
+  id           Int    @id @default(autoincrement())
+  type         String
+  category     String
+  sub_category String @default("")
+
+  @@unique([type, category, sub_category])
+}
+
+model PaymentMethod {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+}
+
+model InvestmentTransaction {
+  id          Int      @id @default(autoincrement())
+  date        DateTime
+  amount      Float
+  type        String
+  contributor String   @default("")
+  note        String   @default("")
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@index([date])
+}
