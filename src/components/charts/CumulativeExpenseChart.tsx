@@ -17,13 +17,12 @@ interface CumulativeExpenseChartProps {
   data: DailyData[]
   prevData?: { day: number; cumulative: number }[]
   daysInMonth?: number
-  onDateRangeSelect?: (start: string, end: string) => void
 }
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value)
 
-export function CumulativeExpenseChart({ data, prevData, daysInMonth, onDateRangeSelect }: CumulativeExpenseChartProps) {
+export function CumulativeExpenseChart({ data, prevData, daysInMonth }: CumulativeExpenseChartProps) {
   const prevMap = new Map<number, number>((prevData ?? []).map((d) => [d.day, d.cumulative]))
 
   // x-axis spans whichever month has more days
@@ -52,17 +51,11 @@ export function CumulativeExpenseChart({ data, prevData, daysInMonth, onDateRang
 
   const tickInterval = Math.max(1, Math.floor(maxDays / 5))
 
-  const handleClick = (payload: { activePayload?: { payload: { date: string } }[] }) => {
-    if (!payload?.activePayload?.[0] || !onDateRangeSelect) return
-    const clickedDate = payload.activePayload[0].payload.date
-    if (clickedDate) onDateRangeSelect(clickedDate, clickedDate)
-  }
-
   return (
     <div className="bg-mo-card rounded-3xl border border-mo-border shadow-card p-5">
       <h3 className="text-sm font-semibold text-mo-text mb-4">Cumulative Expenses</h3>
       <ResponsiveContainer width="100%" height={200}>
-        <LineChart data={formatted} onClick={handleClick} style={{ cursor: 'pointer' }} margin={{ left: -10, right: 8, top: 4, bottom: 0 }}>
+        <LineChart data={formatted} margin={{ left: -10, right: 8, top: 4, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#E2D9D0" />
           <XAxis
             dataKey="label"
@@ -127,9 +120,6 @@ export function CumulativeExpenseChart({ data, prevData, daysInMonth, onDateRang
           )}
         </LineChart>
       </ResponsiveContainer>
-      {onDateRangeSelect && (
-        <p className="text-xs text-mo-muted mt-2">Click a point to filter by date</p>
-      )}
     </div>
   )
 }

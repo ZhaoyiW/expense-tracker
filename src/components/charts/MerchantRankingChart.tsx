@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   BarChart,
   Bar,
@@ -39,6 +40,8 @@ function MerchantChart({
   onSelect?: (merchant: string) => void
   selected?: string
 }) {
+  const [showAll, setShowAll] = useState(false)
+
   if (!data || data.length === 0) {
     return (
       <div className="flex-1">
@@ -52,12 +55,14 @@ function MerchantChart({
     if (onSelect) onSelect(selected === entry.merchant ? '' : entry.merchant)
   }
 
+  const visible = showAll ? data : data.slice(0, 5)
+
   return (
     <div className="flex-1 min-w-0">
       <h4 className="text-sm font-medium text-mo-muted mb-3">{title}</h4>
-      <ResponsiveContainer width="100%" height={Math.max(200, data.length * 36)}>
+      <ResponsiveContainer width="100%" height={Math.max(200, visible.length * 36)}>
         <BarChart
-          data={data}
+          data={visible}
           layout="vertical"
           margin={{ left: 0, right: 60, top: 0, bottom: 0 }}
           onClick={(e) => e?.activePayload && handleClick(e.activePayload[0].payload)}
@@ -89,7 +94,7 @@ function MerchantChart({
               formatter={labelFormatter}
               style={{ fontSize: 10, fill: '#8A7F78' }}
             />
-            {data.map((entry) => (
+            {visible.map((entry) => (
               <Cell
                 key={entry.merchant}
                 fill={color}
@@ -99,6 +104,14 @@ function MerchantChart({
           </Bar>
         </BarChart>
       </ResponsiveContainer>
+      {data.length > 5 && (
+        <button
+          onClick={() => setShowAll((v) => !v)}
+          className="mt-2 text-xs text-brand-dark font-medium hover:underline"
+        >
+          {showAll ? 'Show less' : `Show all ${data.length}`}
+        </button>
+      )}
     </div>
   )
 }

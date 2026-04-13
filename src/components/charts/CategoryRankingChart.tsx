@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   BarChart,
   Bar,
@@ -12,6 +13,8 @@ import {
   LabelList,
 } from 'recharts'
 import { CategoryAmount } from '@/types'
+
+const DEFAULT_SHOW = 5
 
 interface CategoryRankingChartProps {
   expenseByCategory: CategoryAmount[]
@@ -41,6 +44,8 @@ function HorizontalBarChart({
   selected?: string
   total?: number
 }) {
+  const [showAll, setShowAll] = useState(false)
+
   if (!data || data.length === 0) {
     return (
       <div className="flex-1">
@@ -54,12 +59,14 @@ function HorizontalBarChart({
     if (onSelect) onSelect(selected === entry.category ? '' : entry.category)
   }
 
+  const visible = showAll ? data : data.slice(0, DEFAULT_SHOW)
+
   return (
     <div className="flex-1 min-w-0">
       <h4 className="text-sm font-medium text-mo-muted mb-3">{title}</h4>
-      <ResponsiveContainer width="100%" height={Math.max(200, data.length * 36)}>
+      <ResponsiveContainer width="100%" height={Math.max(200, visible.length * 36)}>
         <BarChart
-          data={data}
+          data={visible}
           layout="vertical"
           margin={{ left: 0, right: total ? 90 : 60, top: 0, bottom: 0 }}
           onClick={(e) => e?.activePayload && handleClick(e.activePayload[0].payload)}
@@ -101,7 +108,7 @@ function HorizontalBarChart({
                 )
               }}
             />
-            {data.map((entry) => (
+            {visible.map((entry) => (
               <Cell
                 key={entry.category}
                 fill={color}
@@ -111,6 +118,14 @@ function HorizontalBarChart({
           </Bar>
         </BarChart>
       </ResponsiveContainer>
+      {data.length > DEFAULT_SHOW && (
+        <button
+          onClick={() => setShowAll((v) => !v)}
+          className="mt-2 text-xs text-brand-dark font-medium hover:underline"
+        >
+          {showAll ? 'Show less' : `Show all ${data.length}`}
+        </button>
+      )}
     </div>
   )
 }

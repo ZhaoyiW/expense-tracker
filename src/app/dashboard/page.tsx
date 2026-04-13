@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { format } from 'date-fns'
+import { motion } from 'framer-motion'
 import { MonthSelector } from '@/components/dashboard/MonthSelector'
 import { SummaryCards } from '@/components/dashboard/SummaryCards'
 import { TransactionTable } from '@/components/dashboard/TransactionTable'
@@ -12,6 +13,15 @@ import { MerchantRankingChart } from '@/components/charts/MerchantRankingChart'
 import { SubCategoryRankingChart } from '@/components/charts/SubCategoryRankingChart'
 import { DashboardData, DashboardFilters } from '@/types'
 import { X } from 'lucide-react'
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 16 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.07, duration: 0.35, ease: 'easeOut' },
+  }),
+}
 
 export default function DashboardPage() {
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'))
@@ -28,8 +38,6 @@ export default function DashboardPage() {
       if (filters.merchant) params.set('merchant', filters.merchant)
       if (filters.sub_category) params.set('sub_category', filters.sub_category)
       if (filters.payment_method) params.set('payment_method', filters.payment_method)
-      if (filters.dateRange?.start) params.set('dateStart', filters.dateRange.start)
-      if (filters.dateRange?.end) params.set('dateEnd', filters.dateRange.end)
 
       const res = await fetch(`/api/dashboard?${params}`)
       if (!res.ok) throw new Error('Failed to fetch')
@@ -45,10 +53,6 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchData()
   }, [fetchData])
-
-  const handleTypeSelect = (type: string) => {
-    setFilters((prev) => ({ ...prev, type: prev.type === type ? undefined : type || undefined }))
-  }
 
   const handleCategorySelect = (category: string) => {
     setFilters((prev) => ({ ...prev, category: prev.category === category ? undefined : category || undefined }))
@@ -66,13 +70,6 @@ export default function DashboardPage() {
     setFilters((prev) => ({ ...prev, payment_method: prev.payment_method === method ? undefined : method || undefined }))
   }
 
-  const handleDateRange = (start: string, end: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      dateRange: prev.dateRange?.start === start ? undefined : { start, end },
-    }))
-  }
-
   const clearFilter = (key: keyof DashboardFilters) => {
     setFilters((prev) => {
       const next = { ...prev }
@@ -87,7 +84,6 @@ export default function DashboardPage() {
     filters.sub_category && { key: 'sub_category' as const, label: `Sub: ${filters.sub_category}` },
     filters.merchant && { key: 'merchant' as const, label: `Merchant: ${filters.merchant}` },
     filters.payment_method && { key: 'payment_method' as const, label: `Account: ${filters.payment_method}` },
-    filters.dateRange && { key: 'dateRange' as const, label: `Date: ${filters.dateRange.start}` },
   ].filter(Boolean) as { key: keyof DashboardFilters; label: string }[]
 
   return (
@@ -131,20 +127,22 @@ export default function DashboardPage() {
       ) : dashboardData ? (
         <>
           {/* Row 1: Summary */}
-          <SummaryCards
-            income={dashboardData.income}
-            expense={dashboardData.expense}
-            prevIncome={dashboardData.prevIncome}
-            prevExpense={dashboardData.prevExpense}
-          />
+          <motion.div custom={0} variants={fadeUp} initial="hidden" animate="visible">
+            <SummaryCards
+              income={dashboardData.income}
+              expense={dashboardData.expense}
+              prevIncome={dashboardData.prevIncome}
+              prevExpense={dashboardData.prevExpense}
+            />
+          </motion.div>
 
-          {/* Row 2: Line + Bar charts */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Row 2: Line + Payment charts */}
+          <motion.div custom={1} variants={fadeUp} initial="hidden" animate="visible"
+            className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <CumulativeExpenseChart
               data={dashboardData.dailyCumulative}
               prevData={dashboardData.prevDailyCumulative}
               daysInMonth={dashboardData.daysInMonth}
-              onDateRangeSelect={handleDateRange}
             />
             <PaymentMethodChart
               usdExpense={dashboardData.usdExpense}
@@ -152,44 +150,50 @@ export default function DashboardPage() {
               onPaymentMethodSelect={handlePaymentMethodSelect}
               selectedPaymentMethod={filters.payment_method}
             />
-          </div>
+          </motion.div>
 
           {/* Row 3: Category ranking */}
-          <CategoryRankingChart
-            expenseByCategory={dashboardData.expenseByCategory}
-            incomeByCategory={dashboardData.incomeByCategory}
-            onCategorySelect={handleCategorySelect}
-            selectedCategory={filters.category}
-          />
+          <motion.div custom={2} variants={fadeUp} initial="hidden" animate="visible">
+            <CategoryRankingChart
+              expenseByCategory={dashboardData.expenseByCategory}
+              incomeByCategory={dashboardData.incomeByCategory}
+              onCategorySelect={handleCategorySelect}
+              selectedCategory={filters.category}
+            />
+          </motion.div>
 
           {/* Row 4: Sub-category ranking */}
-          <SubCategoryRankingChart
-            expenseBySubCategory={dashboardData.expenseBySubCategory}
-            incomeBySubCategory={dashboardData.incomeBySubCategory}
-            onSubCategorySelect={handleSubCategorySelect}
-            selectedSubCategory={filters.sub_category}
-          />
+          <motion.div custom={3} variants={fadeUp} initial="hidden" animate="visible">
+            <SubCategoryRankingChart
+              expenseBySubCategory={dashboardData.expenseBySubCategory}
+              incomeBySubCategory={dashboardData.incomeBySubCategory}
+              onSubCategorySelect={handleSubCategorySelect}
+              selectedSubCategory={filters.sub_category}
+            />
+          </motion.div>
 
           {/* Row 5: Merchant ranking */}
-          <MerchantRankingChart
-            expenseMerchants={dashboardData.expenseMerchants}
-            incomeMerchants={dashboardData.incomeMerchants}
-            onMerchantSelect={handleMerchantSelect}
-            selectedMerchant={filters.merchant}
-          />
+          <motion.div custom={4} variants={fadeUp} initial="hidden" animate="visible">
+            <MerchantRankingChart
+              expenseMerchants={dashboardData.expenseMerchants}
+              incomeMerchants={dashboardData.incomeMerchants}
+              onMerchantSelect={handleMerchantSelect}
+              selectedMerchant={filters.merchant}
+            />
+          </motion.div>
 
-          {/* Row 6: Transaction table */}
-          <div>
+          {/* Row 6: Recent transactions (10 max) */}
+          <motion.div custom={5} variants={fadeUp} initial="hidden" animate="visible">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-base font-semibold text-mo-text">
-                Transactions
+                Recent Transactions
                 <span className="ml-2 text-sm text-mo-muted font-normal">
-                  ({dashboardData.transactions.length})
+                  ({Math.min(10, dashboardData.transactions.length)} of {dashboardData.transactions.length})
                 </span>
               </h2>
             </div>
-            <TransactionTable transactions={dashboardData.transactions} />
-          </div>
+            <TransactionTable transactions={dashboardData.transactions.slice(0, 10)} />
+          </motion.div>
         </>
       ) : (
         <div className="text-center text-mo-muted py-16">No data available</div>
