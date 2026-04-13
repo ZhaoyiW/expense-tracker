@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
     // Prev month cumulative — one entry per day of the prev month
     const prevDayMap: Record<number, number> = {}
     for (const t of prevMonthTransactions.filter((t) => t.type === 'Expense')) {
-      const d = t.date.getUTCDate()
+      const d = parseInt(format(t.date, 'd'), 10)   // local day, consistent with current-month logic
       prevDayMap[d] = (prevDayMap[d] || 0) + t.amount
     }
     let prevCumul = 0

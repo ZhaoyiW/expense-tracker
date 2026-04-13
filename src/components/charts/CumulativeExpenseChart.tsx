@@ -22,6 +22,12 @@ interface CumulativeExpenseChartProps {
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value)
 
+function makeYAxisFormatter(maxValue: number) {
+  if (maxValue >= 10000) return (v: number) => `$${(v / 1000).toFixed(0)}k`
+  if (maxValue >= 1000)  return (v: number) => `$${(v / 1000).toFixed(1)}k`
+  return (v: number) => `$${v.toFixed(0)}`
+}
+
 export function CumulativeExpenseChart({ data, prevData, daysInMonth }: CumulativeExpenseChartProps) {
   const prevMap = new Map<number, number>((prevData ?? []).map((d) => [d.day, d.cumulative]))
 
@@ -51,6 +57,13 @@ export function CumulativeExpenseChart({ data, prevData, daysInMonth }: Cumulati
 
   const tickInterval = Math.max(1, Math.floor(maxDays / 5))
 
+  const maxCumulative = Math.max(
+    ...formatted.map((d) => d.cumulative ?? 0),
+    ...formatted.map((d) => d.prevCumulative ?? 0),
+    1
+  )
+  const yAxisFormatter = makeYAxisFormatter(maxCumulative)
+
   return (
     <div className="bg-mo-card rounded-3xl border border-mo-border shadow-card p-5">
       <h3 className="text-sm font-semibold text-mo-text mb-4">Cumulative Expenses</h3>
@@ -68,7 +81,8 @@ export function CumulativeExpenseChart({ data, prevData, daysInMonth }: Cumulati
             tick={{ fontSize: 11, fill: '#8A7F78' }}
             tickLine={false}
             axisLine={false}
-            tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+            tickFormatter={yAxisFormatter}
+            domain={[0, 'auto']}
             width={40}
           />
           <Tooltip
