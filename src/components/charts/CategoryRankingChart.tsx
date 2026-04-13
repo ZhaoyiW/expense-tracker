@@ -85,7 +85,7 @@ function HorizontalBarChart({
             tick={{ fontSize: 11, fill: '#8A7F78' }}
             tickLine={false}
             axisLine={false}
-            width={110}
+            width={90}
           />
           <Tooltip
             formatter={(value: number) => [formatCurrency(value), 'Amount']}
@@ -137,8 +137,8 @@ export function CategoryRankingChart({
   selectedCategory,
 }: CategoryRankingChartProps) {
   return (
-    <div className="bg-mo-card rounded-3xl border border-mo-border shadow-card p-5">
-      <h3 className="text-sm font-semibold text-mo-text mb-4">Category Breakdown</h3>
+    <div className="bg-mo-card rounded-3xl border border-mo-border shadow-card px-2 py-5">
+      <h3 className="text-sm font-semibold text-mo-text mb-4 px-3">Category Breakdown</h3>
       <div className="flex gap-8 flex-col lg:flex-row">
         <HorizontalBarChart
           data={expenseByCategory.slice(0, 10)}

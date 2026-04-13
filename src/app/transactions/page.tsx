@@ -122,12 +122,12 @@ export default function TransactionsPage() {
 
       {/* Filter bar */}
       <div className="bg-mo-card rounded-3xl border border-mo-border shadow-soft p-3.5 flex items-center gap-3">
-        <div className="flex-1">
+        <div className="shrink-0">
           <label className="text-xs font-medium text-mo-muted mb-1 block">Month</label>
           <MonthSelector value={selectedMonth} onChange={(m) => { setSelectedMonth(m); setPage(1) }} allowAllTime />
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 ml-auto">
           <span className="text-sm text-mo-muted hidden sm:block">{total} transactions</span>
 
           {/* Filter button */}

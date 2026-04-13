@@ -128,6 +128,11 @@ function SwipeableRow({
   )
 }
 
+function isDefaultExpanded(dateKey: string): boolean {
+  const d = parseISO(dateKey)
+  return isToday(d) || isYesterday(d)
+}
+
 export function TransactionTable({
   transactions,
   onEdit,
@@ -138,6 +143,12 @@ export function TransactionTable({
   const [sortKey, setSortKey] = useState<SortKey>('date')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [page, setPage] = useState(1)
+  // today/yesterday expanded by default; others collapsed. toggledKeys flips the default.
+  const [toggledKeys, setToggledKeys] = useState<Set<string>>(new Set())
+  const isExpanded = (dateKey: string) =>
+    toggledKeys.has(dateKey) ? !isDefaultExpanded(dateKey) : isDefaultExpanded(dateKey)
+  const toggleGroup = (dateKey: string) =>
+    setToggledKeys((prev) => { const s = new Set(prev); s.has(dateKey) ? s.delete(dateKey) : s.add(dateKey); return s })
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(sortDir === 'asc' ? 'desc' : 'asc')
@@ -190,20 +201,29 @@ export function TransactionTable({
         <AnimatePresence initial={false}>
           {pagedGroups.map(({ dateKey, items, dayNet }) => (
             <div key={dateKey}>
-              {/* Date header with daily total */}
-              <div className="px-4 py-2 bg-mo-bg/60 border-b border-mo-border flex items-center justify-between">
-                <span className="text-xs font-semibold text-mo-muted tracking-wide">
-                  {formatDateHeader(dateKey)}
-                </span>
+              {/* Date header — clickable to collapse/expand */}
+              <button
+                onClick={() => toggleGroup(dateKey)}
+                className="w-full px-4 py-2 bg-mo-bg/60 border-b border-mo-border flex items-center justify-between active:bg-mo-bg"
+              >
+                <div className="flex items-center gap-1.5">
+                  <ChevronDown
+                    size={12}
+                    className={clsx('text-mo-muted transition-transform', !isExpanded(dateKey) && '-rotate-90')}
+                  />
+                  <span className="text-xs font-semibold text-mo-muted tracking-wide">
+                    {formatDateHeader(dateKey)}
+                  </span>
+                </div>
                 <span className={clsx(
                   'text-xs font-semibold tabular-nums',
                   dayNet >= 0 ? 'text-income-dark' : 'text-expense-dark'
                 )}>
                   {dayNet >= 0 ? '+' : ''}{fmtCompact(dayNet)}
                 </span>
-              </div>
-              {/* Rows */}
-              {items.map((t) =>
+              </button>
+              {/* Rows — only when expanded */}
+              {isExpanded(dateKey) && items.map((t) =>
                 showActions ? (
                   <SwipeableRow key={t.id} t={t} onEdit={onEdit} onDelete={onDelete} />
                 ) : (

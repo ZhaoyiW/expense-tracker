@@ -23,9 +23,9 @@ const formatCurrency = (value: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value)
 
 function makeYAxisFormatter(maxValue: number) {
-  if (maxValue >= 10000) return (v: number) => `$${(v / 1000).toFixed(0)}k`
-  if (maxValue >= 1000)  return (v: number) => `$${(v / 1000).toFixed(1)}k`
-  return (v: number) => `$${v.toFixed(0)}`
+  if (maxValue >= 10000) return (v: number) => `${(v / 1000).toFixed(0)}k`
+  if (maxValue >= 1000)  return (v: number) => `${(v / 1000).toFixed(1)}k`
+  return (v: number) => `${v.toFixed(0)}`
 }
 
 export function CumulativeExpenseChart({ data, prevData, daysInMonth }: CumulativeExpenseChartProps) {

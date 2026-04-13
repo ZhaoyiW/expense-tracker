@@ -81,7 +81,7 @@ function SubCatChart({
             tick={{ fontSize: 11, fill: '#8A7F78' }}
             tickLine={false}
             axisLine={false}
-            width={110}
+            width={90}
           />
           <Tooltip
             formatter={(value: number) => [formatCurrency(value), 'Amount']}
@@ -126,8 +126,8 @@ export function SubCategoryRankingChart({
   if (!hasData) return null
 
   return (
-    <div className="bg-mo-card rounded-3xl border border-mo-border shadow-card p-5">
-      <h3 className="text-sm font-semibold text-mo-text mb-4">Sub-category Breakdown</h3>
+    <div className="bg-mo-card rounded-3xl border border-mo-border shadow-card px-2 py-5">
+      <h3 className="text-sm font-semibold text-mo-text mb-4 px-3">Sub-category Breakdown</h3>
       <div className="flex gap-8 flex-col lg:flex-row">
         <SubCatChart
           data={expenseBySubCategory.slice(0, 10)}

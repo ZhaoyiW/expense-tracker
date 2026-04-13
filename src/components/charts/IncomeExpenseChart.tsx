@@ -12,9 +12,10 @@ interface PaymentMethodChartProps {
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value)
 
+// USD → Morandi green; RMB → Morandi red (红 is traditional for Chinese currency/luck)
 const COLORS = {
-  'USD Account': '#8B9DB5',
-  'RMB Account': '#A89880',
+  'USD Account': '#7A9E8E',
+  'RMB Account': '#C4897A',
 }
 
 export function PaymentMethodChart({ usdExpense, rmbExpense, onPaymentMethodSelect, selectedPaymentMethod }: PaymentMethodChartProps) {
