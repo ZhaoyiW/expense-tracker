@@ -55,7 +55,8 @@ function SwipeableRow({
   const [revealed, setRevealed] = useState(false)
   const constraintsRef = useRef(null)
 
-  const subtitle = [t.sub_category, t.payment_method].filter(Boolean).join(' · ')
+  const paymentLabel = t.payment_method === 'USD Account' ? '$' : t.payment_method === 'RMB Account' ? '¥' : t.payment_method
+  const subtitle = [t.sub_category, paymentLabel].filter(Boolean).join(' · ')
 
   const handleDragEnd = (_: unknown, info: { offset: { x: number } }) => {
     if (info.offset.x < -REVEAL_WIDTH / 2) {
@@ -212,7 +213,7 @@ export function TransactionTable({
                       <div className="text-sm font-semibold text-mo-text truncate">{t.category}</div>
                       {(t.sub_category || t.payment_method) && (
                         <div className="text-xs text-mo-muted truncate mt-0.5">
-                          {[t.sub_category, t.payment_method].filter(Boolean).join(' · ')}
+                          {[t.sub_category, t.payment_method === 'USD Account' ? '$' : t.payment_method === 'RMB Account' ? '¥' : t.payment_method].filter(Boolean).join(' · ')}
                         </div>
                       )}
                     </div>

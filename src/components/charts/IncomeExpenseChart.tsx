@@ -1,16 +1,6 @@
 'use client'
 
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-  LabelList,
-} from 'recharts'
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
 interface PaymentMethodChartProps {
   usdExpense: number
@@ -22,60 +12,96 @@ interface PaymentMethodChartProps {
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value)
 
-export function PaymentMethodChart({ usdExpense, rmbExpense, onPaymentMethodSelect, selectedPaymentMethod }: PaymentMethodChartProps) {
-  const data = [
-    { name: 'USD Account', value: usdExpense, method: 'USD Account', color: '#8B9DB5' },
-    { name: 'RMB Account', value: rmbExpense, method: 'RMB Account', color: '#A89880' },
-  ]
+const COLORS = {
+  'USD Account': '#8B9DB5',
+  'RMB Account': '#A89880',
+}
 
-  const handleClick = (entry: { method: string }) => {
+export function PaymentMethodChart({ usdExpense, rmbExpense, onPaymentMethodSelect, selectedPaymentMethod }: PaymentMethodChartProps) {
+  const raw = [
+    { name: 'USD Account', label: '$ USD', value: usdExpense },
+    { name: 'RMB Account', label: '¥ RMB', value: rmbExpense },
+  ]
+  const data = raw.filter((d) => d.value > 0)
+  const total = data.reduce((s, d) => s + d.value, 0)
+
+  const handleClick = (entry: { name: string }) => {
     if (onPaymentMethodSelect) {
-      onPaymentMethodSelect(selectedPaymentMethod === entry.method ? '' : entry.method)
+      onPaymentMethodSelect(selectedPaymentMethod === entry.name ? '' : entry.name)
     }
+  }
+
+  if (total === 0) {
+    return (
+      <div className="bg-mo-card rounded-3xl border border-mo-border shadow-card p-5 flex flex-col">
+        <h3 className="text-sm font-semibold text-mo-text mb-4">USD vs RMB Expenses</h3>
+        <div className="flex-1 flex items-center justify-center text-mo-muted text-sm">No data</div>
+      </div>
+    )
   }
 
   return (
     <div className="bg-mo-card rounded-3xl border border-mo-border shadow-card p-5">
       <h3 className="text-sm font-semibold text-mo-text mb-4">USD vs RMB Expenses</h3>
       <ResponsiveContainer width="100%" height={200}>
-        <BarChart
-          data={data}
-          margin={{ top: 24, right: 16, bottom: 0, left: -10 }}
-          onClick={(e) => e?.activePayload && handleClick(e.activePayload[0].payload)}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="#E2D9D0" vertical={false} />
-          <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#8A7F78' }} tickLine={false} axisLine={false} />
-          <YAxis
-            tick={{ fontSize: 11, fill: '#8A7F78' }}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
-            width={40}
-          />
-          <Tooltip
-            formatter={(value: number) => [formatCurrency(value), '']}
-            contentStyle={{ borderRadius: '12px', border: '1px solid #E2D9D0', fontSize: 12, background: '#FDFCFB' }}
-          />
-          <Bar dataKey="value" radius={[6, 6, 0, 0]} cursor="pointer">
-            <LabelList
-              dataKey="value"
-              position="top"
-              formatter={formatCurrency}
-              style={{ fontSize: 11, fill: '#8A7F78' }}
-            />
+        <PieChart>
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            cx="50%"
+            cy="50%"
+            innerRadius={52}
+            outerRadius={80}
+            paddingAngle={3}
+            cursor="pointer"
+            onClick={handleClick}
+            label={({ name, percent }) =>
+              `${name === 'USD Account' ? '$' : '¥'} ${(percent * 100).toFixed(0)}%`
+            }
+            labelLine={false}
+          >
             {data.map((entry) => (
               <Cell
-                key={entry.method}
-                fill={entry.color}
-                opacity={!selectedPaymentMethod || selectedPaymentMethod === entry.method ? 1 : 0.4}
+                key={entry.name}
+                fill={COLORS[entry.name as keyof typeof COLORS]}
+                opacity={!selectedPaymentMethod || selectedPaymentMethod === entry.name ? 1 : 0.35}
+                stroke="none"
               />
             ))}
-          </Bar>
-        </BarChart>
+          </Pie>
+          <Tooltip
+            formatter={(value: number, name: string) => [
+              formatCurrency(value),
+              name === 'USD Account' ? '$ USD' : '¥ RMB',
+            ]}
+            contentStyle={{ borderRadius: '12px', border: '1px solid #E2D9D0', fontSize: 12, background: '#FDFCFB' }}
+          />
+          <Legend
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            content={({ payload }: any) => (
+              <div className="flex justify-center gap-6 mt-2">
+                {payload?.map((entry: any) => (
+                  <button
+                    key={entry.value}
+                    onClick={() => handleClick({ name: entry.value })}
+                    className="flex items-center gap-1.5 text-xs text-mo-muted hover:text-mo-text"
+                  >
+                    <span
+                      className="inline-block w-2.5 h-2.5 rounded-full"
+                      style={{ background: entry.color, opacity: !selectedPaymentMethod || selectedPaymentMethod === entry.value ? 1 : 0.35 }}
+                    />
+                    {entry.value === 'USD Account' ? '$ USD' : '¥ RMB'}
+                    <span className="font-medium text-mo-text">
+                      {formatCurrency(entry.value === 'USD Account' ? usdExpense : rmbExpense)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          />
+        </PieChart>
       </ResponsiveContainer>
-      {onPaymentMethodSelect && (
-        <p className="text-xs text-mo-muted mt-2">Click a bar to filter by account</p>
-      )}
     </div>
   )
 }
