@@ -49,7 +49,7 @@ function MetricCard({ title, value, change, changeLabel, cardStyle, valueStyle, 
           <div className={clsx(
             'flex items-center gap-0.5 mt-1 font-medium',
             prominent ? 'text-[10px] md:text-xs' : 'text-[9px] md:text-xs',
-            isGood ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'
+            isGood ? 'text-income-dark' : 'text-expense-dark'
           )}>
             {isUp ? <ArrowUpRight size={prominent ? 12 : 10} /> : <ArrowDownRight size={prominent ? 12 : 10} />}
             <span className="hidden sm:inline">{Math.abs(change).toFixed(1)}% vs last month</span>

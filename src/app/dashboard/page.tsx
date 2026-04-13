@@ -186,13 +186,13 @@ export default function DashboardPage() {
           <motion.div custom={5} variants={fadeUp} initial="hidden" animate="visible">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-base font-semibold text-mo-text">
-                Recent Transactions
+                Transactions
                 <span className="ml-2 text-sm text-mo-muted font-normal">
-                  ({Math.min(10, dashboardData.transactions.length)} of {dashboardData.transactions.length})
+                  ({dashboardData.transactions.length})
                 </span>
               </h2>
             </div>
-            <TransactionTable transactions={dashboardData.transactions.slice(0, 10)} />
+            <TransactionTable transactions={dashboardData.transactions} />
           </motion.div>
         </>
       ) : (
