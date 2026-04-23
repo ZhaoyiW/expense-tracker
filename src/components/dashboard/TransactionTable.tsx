@@ -14,6 +14,7 @@ interface TransactionTableProps {
   onDelete?: (id: number) => void
   showActions?: boolean
   pageSize?: number
+  flatMode?: boolean  // flat list (no date groups), shows merchant
 }
 
 type SortKey = 'date' | 'amount'
@@ -139,6 +140,7 @@ export function TransactionTable({
   onDelete,
   showActions = false,
   pageSize = 20,
+  flatMode = false,
 }: TransactionTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>('date')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -190,6 +192,54 @@ export function TransactionTable({
   // All sorted items for desktop table pagination
   const totalItemPages = Math.max(1, Math.ceil(sorted.length / pageSize))
   const pagedItems = sorted.slice((page - 1) * pageSize, page * pageSize)
+
+  // Flat mode — used in dashboard: plain list with merchant, 10 per page
+  if (flatMode) {
+    const flatTotal = Math.max(1, Math.ceil(sorted.length / pageSize))
+    const flatItems = sorted.slice((page - 1) * pageSize, page * pageSize)
+    return (
+      <div className="bg-mo-card rounded-3xl border border-mo-border shadow-card overflow-hidden">
+        {flatItems.length === 0 && (
+          <div className="px-4 py-10 text-center text-mo-muted text-sm">No transactions found</div>
+        )}
+        {flatItems.map((t) => {
+          const payLabel = t.payment_method === 'USD Account' ? '$' : t.payment_method === 'RMB Account' ? '¥' : t.payment_method
+          const sub = [t.sub_category, payLabel].filter(Boolean).join(' · ')
+          const dateStr = typeof t.date === 'string' ? t.date : new Date(t.date).toISOString()
+          return (
+            <div key={t.id} className="flex items-center gap-3 px-4 py-3.5 border-b border-mo-border last:border-0">
+              <span className="text-xl shrink-0">{getCategoryEmoji(t.category)}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-sm font-semibold text-mo-text truncate">{t.category}</span>
+                  {t.merchant && <span className="text-xs text-mo-muted truncate">{t.merchant}</span>}
+                </div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-xs text-mo-muted">{dateStr.slice(0, 10)}</span>
+                  {sub && <span className="text-xs text-mo-muted/70">{sub}</span>}
+                </div>
+              </div>
+              <span className={clsx('text-base font-bold shrink-0 tabular-nums', t.type === 'Income' ? 'text-income-dark' : 'text-expense-dark')}>
+                {t.type === 'Expense' ? '-' : '+'}{fmt(t.amount)}
+              </span>
+            </div>
+          )
+        })}
+        {flatTotal > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-mo-border">
+            <span className="text-xs text-mo-muted">{(page - 1) * pageSize + 1}–{Math.min(page * pageSize, sorted.length)} of {sorted.length}</span>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1}
+                className="p-1.5 rounded-xl border border-mo-border hover:bg-mo-bg disabled:opacity-40"><ChevronLeft size={14} /></button>
+              <span className="text-xs text-mo-muted">{page}/{flatTotal}</span>
+              <button onClick={() => setPage(Math.min(flatTotal, page + 1))} disabled={page === flatTotal}
+                className="p-1.5 rounded-xl border border-mo-border hover:bg-mo-bg disabled:opacity-40"><ChevronRight size={14} /></button>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="bg-mo-card rounded-3xl border border-mo-border shadow-card overflow-hidden">

@@ -1,6 +1,6 @@
 'use client'
 
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 
 interface PaymentMethodChartProps {
   usdExpense: number
@@ -12,16 +12,30 @@ interface PaymentMethodChartProps {
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value)
 
-// USD → Morandi green; RMB → Morandi red (红 is traditional for Chinese currency/luck)
 const COLORS = {
   'USD Account': '#7A9E8E',
   'RMB Account': '#C4897A',
 }
 
+// Custom label rendered inside the ring slice
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function PieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: any) {
+  const RADIAN = Math.PI / 180
+  const r = innerRadius + (outerRadius - innerRadius) * 0.5
+  const x = cx + r * Math.cos(-midAngle * RADIAN)
+  const y = cy + r * Math.sin(-midAngle * RADIAN)
+  const symbol = name === 'USD Account' ? '$' : '¥'
+  return (
+    <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fontSize={13} fontWeight={600} fill="#fff">
+      {symbol} {(percent * 100).toFixed(0)}%
+    </text>
+  )
+}
+
 export function PaymentMethodChart({ usdExpense, rmbExpense, onPaymentMethodSelect, selectedPaymentMethod }: PaymentMethodChartProps) {
   const raw = [
-    { name: 'USD Account', label: '$ USD', value: usdExpense },
-    { name: 'RMB Account', label: '¥ RMB', value: rmbExpense },
+    { name: 'USD Account', value: usdExpense },
+    { name: 'RMB Account', value: rmbExpense },
   ]
   const data = raw.filter((d) => d.value > 0)
   const total = data.reduce((s, d) => s + d.value, 0)
@@ -43,8 +57,8 @@ export function PaymentMethodChart({ usdExpense, rmbExpense, onPaymentMethodSele
 
   return (
     <div className="bg-mo-card rounded-3xl border border-mo-border shadow-card p-5">
-      <h3 className="text-sm font-semibold text-mo-text mb-4">USD vs RMB Expenses</h3>
-      <ResponsiveContainer width="100%" height={200}>
+      <h3 className="text-sm font-semibold text-mo-text mb-2">USD vs RMB Expenses</h3>
+      <ResponsiveContainer width="100%" height={210}>
         <PieChart>
           <Pie
             data={data}
@@ -52,15 +66,13 @@ export function PaymentMethodChart({ usdExpense, rmbExpense, onPaymentMethodSele
             nameKey="name"
             cx="50%"
             cy="50%"
-            innerRadius={52}
-            outerRadius={80}
-            paddingAngle={3}
+            innerRadius={48}
+            outerRadius={82}
+            paddingAngle={2}
             cursor="pointer"
             onClick={handleClick}
-            label={({ name, percent }) =>
-              `${name === 'USD Account' ? '$' : '¥'} ${(percent * 100).toFixed(0)}%`
-            }
             labelLine={false}
+            label={PieLabel}
           >
             {data.map((entry) => (
               <Cell
@@ -78,31 +90,28 @@ export function PaymentMethodChart({ usdExpense, rmbExpense, onPaymentMethodSele
             ]}
             contentStyle={{ borderRadius: '12px', border: '1px solid #E2D9D0', fontSize: 12, background: '#FDFCFB' }}
           />
-          <Legend
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            content={({ payload }: any) => (
-              <div className="flex justify-center gap-6 mt-2">
-                {payload?.map((entry: any) => (
-                  <button
-                    key={entry.value}
-                    onClick={() => handleClick({ name: entry.value })}
-                    className="flex items-center gap-1.5 text-xs text-mo-muted hover:text-mo-text"
-                  >
-                    <span
-                      className="inline-block w-2.5 h-2.5 rounded-full"
-                      style={{ background: entry.color, opacity: !selectedPaymentMethod || selectedPaymentMethod === entry.value ? 1 : 0.35 }}
-                    />
-                    {entry.value === 'USD Account' ? '$ USD' : '¥ RMB'}
-                    <span className="font-medium text-mo-text">
-                      {formatCurrency(entry.value === 'USD Account' ? usdExpense : rmbExpense)}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-          />
         </PieChart>
       </ResponsiveContainer>
+      {/* Legend */}
+      <div className="flex justify-center gap-6 -mt-2">
+        {raw.filter((d) => d.value > 0).map((entry) => (
+          <button
+            key={entry.name}
+            onClick={() => handleClick(entry)}
+            className="flex items-center gap-1.5 text-xs text-mo-muted hover:text-mo-text"
+          >
+            <span
+              className="inline-block w-2.5 h-2.5 rounded-full"
+              style={{
+                background: COLORS[entry.name as keyof typeof COLORS],
+                opacity: !selectedPaymentMethod || selectedPaymentMethod === entry.name ? 1 : 0.35,
+              }}
+            />
+            {entry.name === 'USD Account' ? '$ USD' : '¥ RMB'}
+            <span className="font-medium text-mo-text">{formatCurrency(entry.value)}</span>
+          </button>
+        ))}
+      </div>
     </div>
   )
 }

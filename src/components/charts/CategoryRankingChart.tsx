@@ -49,7 +49,7 @@ function HorizontalBarChart({
   if (!data || data.length === 0) {
     return (
       <div className="flex-1">
-        <h4 className="text-sm font-medium text-mo-muted mb-3">{title}</h4>
+        <h4 className="text-sm font-medium text-mo-muted mb-3 text-center">{title}</h4>
         <div className="h-48 flex items-center justify-center text-mo-muted text-sm">No data</div>
       </div>
     )
@@ -63,7 +63,7 @@ function HorizontalBarChart({
 
   return (
     <div className="flex-1 min-w-0">
-      <h4 className="text-sm font-medium text-mo-muted mb-3">{title}</h4>
+      <h4 className="text-sm font-medium text-mo-muted mb-3 text-center">{title}</h4>
       <ResponsiveContainer width="100%" height={Math.max(200, visible.length * 36)}>
         <BarChart
           data={visible}
