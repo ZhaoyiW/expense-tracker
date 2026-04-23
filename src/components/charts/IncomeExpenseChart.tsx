@@ -66,8 +66,8 @@ export function PaymentMethodChart({ usdExpense, rmbExpense, onPaymentMethodSele
             nameKey="name"
             cx="50%"
             cy="50%"
-            innerRadius={48}
-            outerRadius={82}
+            innerRadius={30}
+            outerRadius={90}
             paddingAngle={2}
             cursor="pointer"
             onClick={handleClick}
