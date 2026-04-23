@@ -41,11 +41,11 @@ function MetricCard({ title, value, change, cardStyle, valueStyle, emoji, isGood
         <span className="text-sm md:text-xl">{emoji}</span>
       </div>
       {/* Big number */}
-      <div className={clsx('text-xl md:text-3xl font-bold tracking-tight', valueStyle)}>{value}</div>
+      <div className={clsx('text-xl md:text-3xl font-bold tracking-tight text-center', valueStyle)}>{value}</div>
       {/* MoM — small, original size */}
       {change !== null ? (
         <div className={clsx(
-          'flex items-center gap-0.5 text-[9px] md:text-xs font-medium',
+          'flex items-center justify-center gap-0.5 text-[9px] md:text-xs font-medium',
           isGood ? 'text-income-dark' : 'text-expense-dark'
         )}>
           {isUp ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
@@ -53,7 +53,7 @@ function MetricCard({ title, value, change, cardStyle, valueStyle, emoji, isGood
           <span className="sm:hidden">{Math.abs(change).toFixed(1)}%</span>
         </div>
       ) : (
-        <div className="text-[9px] md:text-xs text-mo-muted">No prior data</div>
+        <div className="text-[9px] md:text-xs text-mo-muted text-center">No prior data</div>
       )}
     </div>
   )

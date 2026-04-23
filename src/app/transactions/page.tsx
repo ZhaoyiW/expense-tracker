@@ -9,13 +9,9 @@ import { TransactionForm } from '@/components/transactions/TransactionForm'
 import { MonthSelector } from '@/components/dashboard/MonthSelector'
 import { Transaction } from '@/types'
 import { CATEGORY_OPTIONS, TYPES } from '@/lib/constants'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
-
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [total, setTotal] = useState(0)
-  const [page, setPage] = useState(1)
-  const pageSize = 50
 
   const [selectedMonth, setSelectedMonth] = useState(() => format(new Date(), 'yyyy-MM'))
   const [filterType, setFilterType] = useState('')
@@ -35,8 +31,7 @@ export default function TransactionsPage() {
       if (filterType) params.set('type', filterType)
       if (filterCategory) params.set('category', filterCategory)
       if (filterSubCategory) params.set('sub_category', filterSubCategory)
-      params.set('page', String(page))
-      params.set('pageSize', String(pageSize))
+      params.set('pageSize', '500')
 
       const res = await fetch(`/api/transactions?${params}`)
       if (!res.ok) throw new Error('Failed to fetch')
@@ -48,7 +43,7 @@ export default function TransactionsPage() {
     } finally {
       setLoading(false)
     }
-  }, [selectedMonth, filterType, filterCategory, filterSubCategory, page])
+  }, [selectedMonth, filterType, filterCategory, filterSubCategory])
 
   useEffect(() => {
     fetchTransactions()
@@ -88,10 +83,7 @@ export default function TransactionsPage() {
     setFilterType('')
     setFilterCategory('')
     setFilterSubCategory('')
-    setPage(1)
   }
-
-  const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
   const allCategories = [...new Set(
     Object.values(CATEGORY_OPTIONS).flatMap((opts) => Object.keys(opts))
@@ -124,7 +116,7 @@ export default function TransactionsPage() {
       <div className="bg-mo-card rounded-3xl border border-mo-border shadow-soft p-3.5 flex items-center gap-3">
         <div className="shrink-0">
           <label className="text-xs font-medium text-mo-muted mb-1 block">Month</label>
-          <MonthSelector value={selectedMonth} onChange={(m) => { setSelectedMonth(m); setPage(1) }} allowAllTime />
+          <MonthSelector value={selectedMonth} onChange={(m) => { setSelectedMonth(m);  }} allowAllTime />
         </div>
 
         <div className="flex items-center gap-2 ml-auto">
@@ -190,28 +182,8 @@ export default function TransactionsPage() {
           onEdit={(t) => setEditingTransaction(t)}
           onDelete={handleDelete}
           showActions
+          pageSize={10}
         />
-      )}
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3">
-          <button
-            onClick={() => setPage(Math.max(1, page - 1))}
-            disabled={page === 1}
-            className="p-2 rounded-2xl border border-mo-border hover:bg-mo-bg disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <span className="text-sm text-mo-muted">Page {page} of {totalPages}</span>
-          <button
-            onClick={() => setPage(Math.min(totalPages, page + 1))}
-            disabled={page === totalPages}
-            className="p-2 rounded-2xl border border-mo-border hover:bg-mo-bg disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <ChevronRight size={16} />
-          </button>
-        </div>
       )}
 
       {/* Add / Edit Form Modal */}
@@ -272,7 +244,7 @@ export default function TransactionsPage() {
                     {['', ...TYPES].map((t) => (
                       <button
                         key={t || 'all'}
-                        onClick={() => { setFilterType(t); setPage(1) }}
+                        onClick={() => { setFilterType(t);  }}
                         className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
                           filterType === t
                             ? 'bg-brand text-white border-brand'
@@ -289,7 +261,7 @@ export default function TransactionsPage() {
                   <label className="text-xs font-medium text-mo-muted mb-1.5 block">Category</label>
                   <select
                     value={filterCategory}
-                    onChange={(e) => { setFilterCategory(e.target.value); setFilterSubCategory(''); setPage(1) }}
+                    onChange={(e) => { setFilterCategory(e.target.value); setFilterSubCategory('');  }}
                     className="w-full px-3 py-2.5 rounded-2xl border border-mo-border bg-mo-bg text-mo-text text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
                   >
                     <option value="">All categories</option>
@@ -301,7 +273,7 @@ export default function TransactionsPage() {
                   <label className="text-xs font-medium text-mo-muted mb-1.5 block">Sub-category</label>
                   <select
                     value={filterSubCategory}
-                    onChange={(e) => { setFilterSubCategory(e.target.value); setPage(1) }}
+                    onChange={(e) => { setFilterSubCategory(e.target.value);  }}
                     className="w-full px-3 py-2.5 rounded-2xl border border-mo-border bg-mo-bg text-mo-text text-sm focus:outline-none focus:ring-2 focus:ring-brand/40"
                   >
                     <option value="">All sub-categories</option>
@@ -312,7 +284,7 @@ export default function TransactionsPage() {
 
               <div className="flex gap-3 pt-1">
                 <button
-                  onClick={() => { setFilterType(''); setFilterCategory(''); setFilterSubCategory(''); setPage(1) }}
+                  onClick={() => { setFilterType(''); setFilterCategory(''); setFilterSubCategory('');  }}
                   className="flex-1 py-2.5 rounded-2xl border border-mo-border text-mo-text text-sm font-medium hover:bg-mo-bg"
                 >
                   Clear all

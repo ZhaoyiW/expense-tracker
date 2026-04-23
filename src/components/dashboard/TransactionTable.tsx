@@ -54,6 +54,7 @@ function SwipeableRow({
   const x = useMotionValue(0)
   const REVEAL_WIDTH = 112
   const [revealed, setRevealed] = useState(false)
+  const [noteExpanded, setNoteExpanded] = useState(false)
   const constraintsRef = useRef(null)
 
   const paymentLabel = t.payment_method === 'USD Account' ? '$' : t.payment_method === 'RMB Account' ? '¥' : t.payment_method
@@ -105,8 +106,8 @@ function SwipeableRow({
         dragConstraints={{ left: -REVEAL_WIDTH, right: 0 }}
         dragElastic={0.05}
         onDragEnd={handleDragEnd}
-        onClick={revealed ? close : undefined}
-        className="relative z-10 flex items-center gap-3 px-4 py-3.5 bg-mo-card active:bg-mo-bg touch-pan-y"
+        onClick={revealed ? close : (t.note ? () => setNoteExpanded((v) => !v) : undefined)}
+        className={clsx('relative z-10 flex items-center gap-3 px-4 py-3.5 bg-mo-card touch-pan-y', t.note && !revealed && 'active:bg-mo-bg cursor-pointer')}
       >
         <span className="text-xl shrink-0">{getCategoryEmoji(t.category)}</span>
         <div className="flex-1 min-w-0">
@@ -116,6 +117,9 @@ function SwipeableRow({
           )}
           {t.merchant && (
             <div className="text-xs text-mo-muted/70 truncate">{t.merchant}</div>
+          )}
+          {noteExpanded && t.note && (
+            <div className="mt-1.5 text-xs text-mo-muted bg-mo-bg rounded-lg px-2 py-1.5">{t.note}</div>
           )}
         </div>
         <span className={clsx(
@@ -202,9 +206,8 @@ function FlatList({
   )
 }
 
-function isDefaultExpanded(dateKey: string): boolean {
-  const d = parseISO(dateKey)
-  return isToday(d) || isYesterday(d)
+function makeTop5Set(groups: Group[]): Set<string> {
+  return new Set(groups.slice(0, 5).map((g) => g.dateKey))
 }
 
 export function TransactionTable({
@@ -218,12 +221,10 @@ export function TransactionTable({
   const [sortKey, setSortKey] = useState<SortKey>('date')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [page, setPage] = useState(1)
-  // today/yesterday expanded by default; others collapsed. toggledKeys flips the default.
   const [toggledKeys, setToggledKeys] = useState<Set<string>>(new Set())
-  const isExpanded = (dateKey: string) =>
-    toggledKeys.has(dateKey) ? !isDefaultExpanded(dateKey) : isDefaultExpanded(dateKey)
-  const toggleGroup = (dateKey: string) =>
-    setToggledKeys((prev) => { const s = new Set(prev); s.has(dateKey) ? s.delete(dateKey) : s.add(dateKey); return s })
+  const [expandedNoteIds, setExpandedNoteIds] = useState<Set<number>>(new Set())
+  const toggleNote = (id: number) =>
+    setExpandedNoteIds((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s })
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(sortDir === 'asc' ? 'desc' : 'asc')
@@ -252,6 +253,14 @@ export function TransactionTable({
       allGroups.push({ dateKey, items: [t], dayNet: delta })
     }
   }
+
+  // Top-5 most recent date groups are expanded by default; toggledKeys flips the default
+  const top5 = makeTop5Set(allGroups)
+  const isDefaultExpanded = (dateKey: string) => top5.has(dateKey)
+  const isExpanded = (dateKey: string) =>
+    toggledKeys.has(dateKey) ? !isDefaultExpanded(dateKey) : isDefaultExpanded(dateKey)
+  const toggleGroup = (dateKey: string) =>
+    setToggledKeys((prev) => { const s = new Set(prev); s.has(dateKey) ? s.delete(dateKey) : s.add(dateKey); return s })
 
   // Paginate groups
   const totalPages = Math.max(1, Math.ceil(allGroups.length / pageSize))
@@ -307,8 +316,12 @@ export function TransactionTable({
                 showActions ? (
                   <SwipeableRow key={t.id} t={t} onEdit={onEdit} onDelete={onDelete} />
                 ) : (
-                  <div key={t.id} className="flex items-center gap-3 px-4 py-3.5 border-b border-mo-border last:border-0">
-                    <span className="text-xl shrink-0">{getCategoryEmoji(t.category)}</span>
+                  <div
+                    key={t.id}
+                    className={clsx('flex items-start gap-3 px-4 py-3.5 border-b border-mo-border last:border-0', t.note && 'cursor-pointer active:bg-mo-bg')}
+                    onClick={() => t.note ? toggleNote(t.id) : undefined}
+                  >
+                    <span className="text-xl shrink-0 mt-0.5">{getCategoryEmoji(t.category)}</span>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-semibold text-mo-text truncate">{t.category}</div>
                       {(t.sub_category || t.payment_method) && (
@@ -316,9 +329,12 @@ export function TransactionTable({
                           {[t.sub_category, t.payment_method === 'USD Account' ? '$' : t.payment_method === 'RMB Account' ? '¥' : t.payment_method].filter(Boolean).join(' · ')}
                         </div>
                       )}
+                      {expandedNoteIds.has(t.id) && t.note && (
+                        <div className="mt-1.5 text-xs text-mo-muted bg-mo-bg rounded-lg px-2 py-1.5">{t.note}</div>
+                      )}
                     </div>
                     <span className={clsx(
-                      'text-base font-bold shrink-0 tabular-nums',
+                      'text-base font-bold shrink-0 tabular-nums mt-0.5',
                       t.type === 'Income' ? 'text-income-dark' : 'text-expense-dark'
                     )}>
                       {t.type === 'Expense' ? '-' : '+'}{fmt(t.amount)}
