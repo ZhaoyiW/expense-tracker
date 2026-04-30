@@ -36,15 +36,24 @@ export async function GET(request: NextRequest) {
     if (filterSubCategory) txFilter.sub_category = filterSubCategory
     if (filterPaymentMethod) txFilter.payment_method = filterPaymentMethod
 
-    // Fetch filtered transactions (used for all aggregations + table)
-    // Prev month always unfiltered (for comparison baseline)
+    // Prev month filter: same dimension filters, different date range
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const prevTxFilter: any = {
+      date: { gte: prevMonthStart, lte: prevMonthEnd },
+    }
+    if (filterType) prevTxFilter.type = filterType
+    if (filterCategory) prevTxFilter.category = filterCategory
+    if (filterMerchant) prevTxFilter.merchant = filterMerchant
+    if (filterSubCategory) prevTxFilter.sub_category = filterSubCategory
+    if (filterPaymentMethod) prevTxFilter.payment_method = filterPaymentMethod
+
     const [filteredAsc, prevMonthTransactions] = await Promise.all([
       prisma.transaction.findMany({
         where: txFilter,
         orderBy: { date: 'asc' },
       }),
       prisma.transaction.findMany({
-        where: { date: { gte: prevMonthStart, lte: prevMonthEnd } },
+        where: prevTxFilter,
       }),
     ])
 
