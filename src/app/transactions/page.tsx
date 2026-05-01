@@ -105,10 +105,11 @@ export default function TransactionsPage() {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="hidden md:flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand text-white text-sm font-medium hover:bg-brand-dark shadow-soft transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand text-white text-sm font-medium hover:bg-brand-dark shadow-soft transition-colors"
         >
           <Plus size={16} />
-          Add Transaction
+          <span className="hidden sm:inline">Add Transaction</span>
+          <span className="sm:hidden">Add</span>
         </button>
       </div>
 
@@ -198,14 +199,6 @@ export default function TransactionsPage() {
         />
       )}
 
-      {/* Mobile FAB */}
-      <button
-        onClick={() => setShowForm(true)}
-        className="fixed bottom-20 right-4 z-30 md:hidden w-14 h-14 rounded-full bg-brand text-white shadow-lg flex items-center justify-center active:scale-95 transition-transform"
-        aria-label="Add transaction"
-      >
-        <Plus size={24} strokeWidth={2.5} />
-      </button>
 
       {/* Filter Bottom Sheet */}
       <AnimatePresence>
