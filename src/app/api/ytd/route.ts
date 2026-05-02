@@ -6,6 +6,9 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const year = searchParams.get('year') || format(new Date(), 'yyyy')
+    const filterCategory = searchParams.get('category')
+    const filterSubCategory = searchParams.get('sub_category')
+    const filterType = searchParams.get('type')
 
     const today = new Date()
     const currentYearStr = format(today, 'yyyy')
@@ -28,13 +31,19 @@ export async function GET(request: NextRequest) {
       ? `Full Year ${prevYear}`
       : `Jan–${monthNames[ytdEndMonth]} ${prevYear}`
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const dimFilter: any = {}
+    if (filterCategory) dimFilter.category = filterCategory
+    if (filterSubCategory) dimFilter.sub_category = filterSubCategory
+    if (filterType) dimFilter.type = filterType
+
     const [transactions, prevTransactions] = await Promise.all([
       prisma.transaction.findMany({
-        where: { date: { gte: ytdStart, lte: ytdEnd } },
+        where: { date: { gte: ytdStart, lte: ytdEnd }, ...dimFilter },
         orderBy: { date: 'desc' },
       }),
       prisma.transaction.findMany({
-        where: { date: { gte: prevYtdStart, lte: prevYtdEnd } },
+        where: { date: { gte: prevYtdStart, lte: prevYtdEnd }, ...dimFilter },
       }),
     ])
 

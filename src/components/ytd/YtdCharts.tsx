@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   BarChart,
   Bar,
@@ -115,6 +115,9 @@ const renderPieLabel = ({ cx, cy, midAngle, outerRadius, percent }: any) => {
 // ── Transaction table (inline, lightweight) ───────────────────────────────────
 function YtdTable({ transactions }: { transactions: Transaction[] }) {
   const [page, setPage] = useState(1)
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
+  const toggleNote = (id: number) =>
+    setExpandedIds((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s })
   const pageSize = 20
   const total = transactions.length
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
@@ -140,26 +143,36 @@ function YtdTable({ transactions }: { transactions: Transaction[] }) {
               </tr>
             )}
             {paginated.map((t) => (
-              <tr key={t.id} className="hover:bg-mo-bg transition-colors">
-                <td className="px-4 py-3 text-mo-muted text-xs whitespace-nowrap">
-                  {format(parseISO(typeof t.date === 'string' ? t.date : new Date(t.date).toISOString()), 'MMM d, yyyy')}
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-1.5">
-                    <span>{getCategoryEmoji(t.category)}</span>
-                    <div>
-                      <div className="text-sm font-medium text-mo-text">{t.category}</div>
-                      {t.sub_category && <div className="text-xs text-mo-muted">{t.sub_category}</div>}
+              <React.Fragment key={t.id}>
+                <tr
+                  onClick={() => t.note ? toggleNote(t.id) : undefined}
+                  className={clsx('transition-colors', t.note ? 'cursor-pointer hover:bg-mo-bg' : 'hover:bg-mo-bg')}
+                >
+                  <td className="px-4 py-3 text-mo-muted text-xs whitespace-nowrap">
+                    {format(parseISO(typeof t.date === 'string' ? t.date : new Date(t.date).toISOString()), 'MMM d, yyyy')}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1.5">
+                      <span>{getCategoryEmoji(t.category)}</span>
+                      <div>
+                        <div className="text-sm font-medium text-mo-text">{t.category}</div>
+                        {t.sub_category && <div className="text-xs text-mo-muted">{t.sub_category}</div>}
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-sm text-mo-text hidden sm:table-cell">{t.merchant || '—'}</td>
-                <td className="px-4 py-3 text-xs text-mo-muted hidden md:table-cell">{t.payment_method}</td>
-                <td className={clsx('px-4 py-3 text-right font-semibold whitespace-nowrap text-sm',
-                  t.type === 'Income' ? 'text-income-dark' : 'text-expense-dark')}>
-                  {t.type === 'Expense' ? '-' : '+'}{formatFull(t.amount)}
-                </td>
-              </tr>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-mo-text hidden sm:table-cell">{t.merchant || '—'}</td>
+                  <td className="px-4 py-3 text-xs text-mo-muted hidden md:table-cell">{t.payment_method}</td>
+                  <td className={clsx('px-4 py-3 text-right font-semibold whitespace-nowrap text-sm',
+                    t.type === 'Income' ? 'text-income-dark' : 'text-expense-dark')}>
+                    {t.type === 'Expense' ? '-' : '+'}{formatFull(t.amount)}
+                  </td>
+                </tr>
+                {expandedIds.has(t.id) && t.note && (
+                  <tr className="bg-mo-bg">
+                    <td colSpan={5} className="px-6 py-2 text-xs text-mo-muted italic">{t.note}</td>
+                  </tr>
+                )}
+              </React.Fragment>
             ))}
           </tbody>
         </table>
