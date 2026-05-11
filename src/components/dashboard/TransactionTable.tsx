@@ -1,12 +1,37 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect, useMemo } from 'react'
 import { format, parseISO, isToday, isYesterday } from 'date-fns'
-import { ChevronUp, ChevronDown, ChevronsUpDown, Trash2, Pencil, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronUp, ChevronDown, ChevronsUpDown, Trash2, Pencil, ChevronLeft, ChevronRight, Columns } from 'lucide-react'
 import { motion, useMotionValue, AnimatePresence } from 'framer-motion'
 import { Transaction } from '@/types'
 import { getCategoryEmoji } from '@/lib/constants'
 import clsx from 'clsx'
+
+type ColKey = 'date' | 'category' | 'sub_category' | 'merchant' | 'payment' | 'note'
+const COL_LABELS: Record<ColKey, string> = {
+  date: 'Date',
+  category: 'Category',
+  sub_category: 'Sub-category',
+  merchant: 'Merchant',
+  payment: 'Payment',
+  note: 'Note',
+}
+const ALL_COLS = Object.keys(COL_LABELS) as ColKey[]
+// Dimensions that, when hidden, trigger aggregation
+const DIMENSION_COLS: ColKey[] = ['date', 'category', 'merchant', 'payment']
+interface AggRow {
+  date?: string
+  category?: string
+  sub_category?: string
+  merchant?: string
+  payment?: string
+  totalIncome: number
+  totalExpense: number
+  count: number
+}
+
+
 
 interface TransactionTableProps {
   transactions: Transaction[]
@@ -223,8 +248,37 @@ export function TransactionTable({
   const [page, setPage] = useState(1)
   const [toggledKeys, setToggledKeys] = useState<Set<string>>(new Set())
   const [expandedNoteIds, setExpandedNoteIds] = useState<Set<number>>(new Set())
+  const [visibleCols, setVisibleCols] = useState<Set<ColKey>>(new Set(ALL_COLS))
+  const [colPickerOpen, setColPickerOpen] = useState(false)
+  const colPickerRef = useRef<HTMLDivElement>(null)
+
+
+  useEffect(() => {
+    if (!colPickerOpen) return
+    const handler = (e: MouseEvent) => {
+      if (colPickerRef.current && !colPickerRef.current.contains(e.target as Node))
+        setColPickerOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [colPickerOpen])
+
+  const toggleCol = (col: ColKey) => {
+    setVisibleCols((prev) => {
+      const next = new Set(prev)
+      next.has(col) ? next.delete(col) : next.add(col)
+      return next
+    })
+  }
+
   const toggleNote = (id: number) =>
     setExpandedNoteIds((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s })
+
+  // Aggregation: active when any dimension column is hidden
+  const isAggregating = DIMENSION_COLS.some((c) => !visibleCols.has(c))
+
+  // Reset page when aggregation mode changes
+  useEffect(() => { setPage(1) }, [isAggregating])
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(sortDir === 'asc' ? 'desc' : 'asc')
@@ -238,6 +292,40 @@ export function TransactionTable({
       : a.amount - b.amount
     return sortDir === 'asc' ? cmp : -cmp
   })
+
+  // Aggregated rows — group by visible dimensions, sum amounts
+  const aggRows = useMemo<AggRow[]>(() => {
+    if (!isAggregating) return []
+    const map = new Map<string, AggRow>()
+    for (const t of sorted) {
+      const dateStr = typeof t.date === 'string' ? t.date.slice(0, 10) : new Date(t.date).toISOString().slice(0, 10)
+      const key = [
+        visibleCols.has('date') ? dateStr : '',
+        visibleCols.has('category') ? t.category : '',
+        visibleCols.has('sub_category') ? (t.sub_category || '') : '',
+        visibleCols.has('merchant') ? (t.merchant || '') : '',
+        visibleCols.has('payment') ? t.payment_method : '',
+      ].join('\x00')
+      if (!map.has(key)) {
+        map.set(key, {
+          date: visibleCols.has('date') ? dateStr : undefined,
+          category: visibleCols.has('category') ? t.category : undefined,
+          sub_category: visibleCols.has('sub_category') ? (t.sub_category || undefined) : undefined,
+          merchant: visibleCols.has('merchant') ? (t.merchant || undefined) : undefined,
+          payment: visibleCols.has('payment') ? t.payment_method : undefined,
+          totalIncome: 0, totalExpense: 0, count: 0,
+        })
+      }
+      const row = map.get(key)!
+      if (t.type === 'Income') row.totalIncome += t.amount
+      else row.totalExpense += t.amount
+      row.count++
+    }
+    return [...map.values()].sort((a, b) => b.totalExpense - a.totalExpense)
+  }, [sorted, visibleCols, isAggregating])
+
+  const aggTotalPages = Math.max(1, Math.ceil(aggRows.length / pageSize))
+  const pagedAggRows = aggRows.slice((page - 1) * pageSize, page * pageSize)
 
   // Build date groups from ALL sorted items (for totals)
   const allGroups: Group[] = []
@@ -349,83 +437,161 @@ export function TransactionTable({
 
       {/* Desktop table */}
       <div className="hidden sm:block overflow-x-auto">
+        {/* Column picker toolbar */}
+        <div className="flex items-center justify-end px-4 py-2 border-b border-mo-border bg-mo-bg/50">
+          <div className="relative" ref={colPickerRef}>
+            <button
+              onClick={() => setColPickerOpen((v) => !v)}
+              className={clsx(
+                'flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-xl border transition-colors',
+                colPickerOpen
+                  ? 'bg-brand-subtle text-brand-dark border-brand/30'
+                  : 'text-mo-muted border-mo-border hover:text-mo-text hover:bg-mo-bg'
+              )}
+            >
+              <Columns size={13} />
+              Columns
+            </button>
+            {colPickerOpen && (
+              <div className="absolute right-0 top-full mt-1.5 z-20 bg-mo-card border border-mo-border rounded-2xl shadow-card p-3 space-y-2.5 min-w-[160px]">
+                {ALL_COLS.map((col) => (
+                  <label key={col} className="flex items-center gap-2.5 text-sm text-mo-text cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={visibleCols.has(col)}
+                      onChange={() => toggleCol(col)}
+                      className="w-3.5 h-3.5 rounded accent-brand cursor-pointer"
+                    />
+                    {COL_LABELS[col]}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-mo-border bg-mo-bg">
-              <th className="px-4 py-3 text-left text-xs font-medium text-mo-muted cursor-pointer" onClick={() => handleSort('date')}>
-                <span className="flex items-center gap-1">Date <SortIcon col="date" /></span>
+              {visibleCols.has('date') && (
+                <th className="px-4 py-3 text-left text-xs font-medium text-mo-muted cursor-pointer" onClick={() => !isAggregating && handleSort('date')}>
+                  <span className="flex items-center gap-1">Date {!isAggregating && <SortIcon col="date" />}</span>
+                </th>
+              )}
+              {visibleCols.has('category') && <th className="px-4 py-3 text-left text-xs font-medium text-mo-muted">Category</th>}
+              {visibleCols.has('merchant') && <th className="px-4 py-3 text-left text-xs font-medium text-mo-muted">Merchant</th>}
+              {visibleCols.has('payment') && <th className="px-4 py-3 text-left text-xs font-medium text-mo-muted">Payment</th>}
+              {visibleCols.has('note') && !isAggregating && <th className="px-4 py-3 text-left text-xs font-medium text-mo-muted">Note</th>}
+              <th className="px-4 py-3 text-right text-xs font-medium text-mo-muted cursor-pointer" onClick={() => !isAggregating && handleSort('amount')}>
+                <span className="flex items-center justify-end gap-1">
+                  {isAggregating ? 'Total' : 'Amount'}
+                  {!isAggregating && <SortIcon col="amount" />}
+                </span>
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-mo-muted">Category</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-mo-muted hidden sm:table-cell">Merchant</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-mo-muted hidden md:table-cell">Payment</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-mo-muted hidden lg:table-cell">Note</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-mo-muted cursor-pointer" onClick={() => handleSort('amount')}>
-                <span className="flex items-center justify-end gap-1">Amount <SortIcon col="amount" /></span>
-              </th>
-              {showActions && <th className="px-4 py-3 text-xs font-medium text-mo-muted" />}
+              {isAggregating && <th className="px-4 py-3 text-right text-xs font-medium text-mo-muted">#</th>}
+              {showActions && !isAggregating && <th className="px-4 py-3 text-xs font-medium text-mo-muted" />}
             </tr>
           </thead>
           <tbody className="divide-y divide-mo-border">
-            {pagedItems.length === 0 && (
-              <tr>
-                <td colSpan={showActions ? 7 : 6} className="px-4 py-10 text-center text-mo-muted text-sm">
-                  No transactions found
-                </td>
-              </tr>
-            )}
-            {pagedItems.map((t) => (
-              <tr key={t.id} className="hover:bg-mo-bg transition-colors">
-                <td className="px-4 py-3 text-mo-muted text-xs whitespace-nowrap">
-                  {format(parseISO(typeof t.date === 'string' ? t.date : new Date(t.date).toISOString()), 'MMM d, yyyy')}
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-1.5">
-                    <span>{getCategoryEmoji(t.category)}</span>
-                    <div>
-                      <div className="text-sm font-medium text-mo-text">{t.category}</div>
-                      {t.sub_category && <div className="text-2xs text-mo-muted">{t.sub_category}</div>}
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-sm text-mo-text hidden sm:table-cell">{t.merchant || '—'}</td>
-                <td className="px-4 py-3 text-xs text-mo-muted hidden md:table-cell">{t.payment_method}</td>
-                <td className="px-4 py-3 text-xs text-mo-muted max-w-[150px] truncate hidden lg:table-cell">{t.note || '—'}</td>
-                <td className={clsx(
-                  'px-4 py-3 text-right font-bold whitespace-nowrap',
-                  t.type === 'Income' ? 'text-income-dark' : 'text-expense-dark'
-                )}>
-                  {t.type === 'Expense' ? '-' : '+'}{fmt(t.amount)}
-                </td>
-                {showActions && (
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3 justify-end">
-                      {onEdit && (
-                        <button onClick={() => onEdit(t)} className="text-xs text-brand-dark font-medium hover:underline">Edit</button>
-                      )}
-                      {onDelete && (
-                        <button
-                          onClick={() => { if (confirm('Delete this transaction?')) onDelete(t.id) }}
-                          className="text-xs text-expense font-medium hover:underline"
-                        >Delete</button>
-                      )}
-                    </div>
-                  </td>
+            {isAggregating ? (
+              pagedAggRows.length === 0 ? (
+                <tr><td colSpan={8} className="px-4 py-10 text-center text-mo-muted text-sm">No transactions found</td></tr>
+              ) : pagedAggRows.map((row, i) => {
+                const net = row.totalIncome - row.totalExpense
+                return (
+                  <tr key={i} className="hover:bg-mo-bg transition-colors">
+                    {visibleCols.has('date') && (
+                      <td className="px-4 py-3 text-mo-muted text-xs whitespace-nowrap">
+                        {row.date ? format(parseISO(row.date), 'MMM d, yyyy') : '—'}
+                      </td>
+                    )}
+                    {visibleCols.has('category') && (
+                      <td className="px-4 py-3">
+                        {row.category ? (
+                          <div className="flex items-center gap-1.5">
+                            <span>{getCategoryEmoji(row.category)}</span>
+                            <div>
+                              <div className="text-sm font-medium text-mo-text">{row.category}</div>
+                              {visibleCols.has('sub_category') && row.sub_category && (
+                                <div className="text-2xs text-mo-muted">{row.sub_category}</div>
+                              )}
+                            </div>
+                          </div>
+                        ) : '—'}
+                      </td>
+                    )}
+                    {visibleCols.has('merchant') && <td className="px-4 py-3 text-sm text-mo-text">{row.merchant || '—'}</td>}
+                    {visibleCols.has('payment') && <td className="px-4 py-3 text-xs text-mo-muted">{row.payment || '—'}</td>}
+                    <td className={clsx('px-4 py-3 text-right font-bold whitespace-nowrap', net >= 0 ? 'text-income-dark' : 'text-expense-dark')}>
+                      {net >= 0 ? '+' : ''}{fmt(net)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-xs text-mo-muted">{row.count}</td>
+                  </tr>
+                )
+              })
+            ) : (
+              <>
+                {pagedItems.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-10 text-center text-mo-muted text-sm">No transactions found</td>
+                  </tr>
                 )}
-              </tr>
-            ))}
+                {pagedItems.map((t) => (
+                  <tr key={t.id} className="hover:bg-mo-bg transition-colors">
+                    {visibleCols.has('date') && (
+                      <td className="px-4 py-3 text-mo-muted text-xs whitespace-nowrap">
+                        {format(parseISO(typeof t.date === 'string' ? t.date : new Date(t.date).toISOString()), 'MMM d, yyyy')}
+                      </td>
+                    )}
+                    {visibleCols.has('category') && (
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5">
+                          <span>{getCategoryEmoji(t.category)}</span>
+                          <div>
+                            <div className="text-sm font-medium text-mo-text">{t.category}</div>
+                            {visibleCols.has('sub_category') && t.sub_category && (
+                              <div className="text-2xs text-mo-muted">{t.sub_category}</div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                    )}
+                    {visibleCols.has('merchant') && <td className="px-4 py-3 text-sm text-mo-text">{t.merchant || '—'}</td>}
+                    {visibleCols.has('payment') && <td className="px-4 py-3 text-xs text-mo-muted">{t.payment_method}</td>}
+                    {visibleCols.has('note') && <td className="px-4 py-3 text-xs text-mo-muted max-w-[150px] truncate">{t.note || '—'}</td>}
+                    <td className={clsx('px-4 py-3 text-right font-bold whitespace-nowrap', t.type === 'Income' ? 'text-income-dark' : 'text-expense-dark')}>
+                      {t.type === 'Expense' ? '-' : '+'}{fmt(t.amount)}
+                    </td>
+                    {showActions && (
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3 justify-end">
+                          {onEdit && <button onClick={() => onEdit(t)} className="text-xs text-brand-dark font-medium hover:underline">Edit</button>}
+                          {onDelete && (
+                            <button onClick={() => { if (confirm('Delete this transaction?')) onDelete(t.id) }} className="text-xs text-expense font-medium hover:underline">Delete</button>
+                          )}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </>
+            )}
           </tbody>
         </table>
       </div>
 
-      {/* Pagination — mobile uses group pages, desktop uses item pages */}
-      {(totalPages > 1 || totalItemPages > 1) && (
+      {/* Pagination */}
+      {(totalPages > 1 || totalItemPages > 1 || aggTotalPages > 1) && (
         <div className="flex items-center justify-between px-4 py-3 border-t border-mo-border">
           <span className="text-xs text-mo-muted">
             <span className="sm:hidden">
               {Math.min(page * pageSize, allGroups.length)} / {allGroups.length} days
             </span>
             <span className="hidden sm:inline">
-              {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, sorted.length)} of {sorted.length}
+              {isAggregating
+                ? `${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, aggRows.length)} of ${aggRows.length} groups`
+                : `${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, sorted.length)} of ${sorted.length}`
+              }
             </span>
           </span>
           <div className="flex items-center gap-2">
@@ -436,10 +602,10 @@ export function TransactionTable({
             >
               <ChevronLeft size={14} />
             </button>
-            <span className="text-xs text-mo-muted">{page} / {Math.max(totalPages, totalItemPages)}</span>
+            <span className="text-xs text-mo-muted">{page} / {isAggregating ? aggTotalPages : Math.max(totalPages, totalItemPages)}</span>
             <button
-              onClick={() => setPage(Math.min(Math.max(totalPages, totalItemPages), page + 1))}
-              disabled={page >= Math.max(totalPages, totalItemPages)}
+              onClick={() => setPage(Math.min(isAggregating ? aggTotalPages : Math.max(totalPages, totalItemPages), page + 1))}
+              disabled={page >= (isAggregating ? aggTotalPages : Math.max(totalPages, totalItemPages))}
               className="p-1.5 rounded-xl border border-mo-border hover:bg-mo-bg disabled:opacity-40"
             >
               <ChevronRight size={14} />

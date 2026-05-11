@@ -9,6 +9,7 @@ import { TransactionForm } from '@/components/transactions/TransactionForm'
 import { MonthSelector } from '@/components/dashboard/MonthSelector'
 import { Transaction } from '@/types'
 import { CATEGORY_OPTIONS, TYPES } from '@/lib/constants'
+import clsx from 'clsx'
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [total, setTotal] = useState(0)
@@ -114,10 +115,31 @@ export default function TransactionsPage() {
       </div>
 
       {/* Filter bar */}
-      <div className="bg-mo-card rounded-3xl border border-mo-border shadow-soft p-3.5 flex items-center gap-3">
+      <div className="bg-mo-card rounded-3xl border border-mo-border shadow-soft p-3.5 flex items-end gap-3">
         <div className="shrink-0">
           <label className="text-xs font-medium text-mo-muted mb-1 block">Month</label>
           <MonthSelector value={selectedMonth} onChange={(m) => { setSelectedMonth(m);  }} allowAllTime />
+        </div>
+
+        {/* Type toggle buttons */}
+        <div className="shrink-0">
+          <label className="text-xs font-medium text-mo-muted mb-1 block">Type</label>
+          <div className="flex bg-mo-card rounded-2xl border border-mo-border px-1 py-1 gap-0.5">
+            {(['Expense', 'Income'] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setFilterType((prev) => prev === t ? '' : t)}
+                className={clsx(
+                  'px-3 py-2 rounded-xl text-sm font-semibold transition-colors active:scale-95',
+                  filterType === t
+                    ? t === 'Expense' ? 'bg-expense text-white shadow-soft' : 'bg-income text-white shadow-soft'
+                    : 'text-mo-muted hover:bg-mo-accent-light'
+                )}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="flex items-center gap-2 ml-auto">
