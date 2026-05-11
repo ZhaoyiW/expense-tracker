@@ -197,10 +197,19 @@ export function TransactionForm({ initial, onSubmit, onCancel }: TransactionForm
     const d = parseISO(date)
     const dom = d.getDate()
     const dow = d.getDay()
-    return recurringPatterns.filter((p) =>
-      (p.pattern === 'day_of_month' && p.day === dom) ||
-      (p.pattern === 'day_of_week' && p.day === dow)
-    )
+    const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+    return recurringPatterns.filter((p) => {
+      if (p.pattern === 'day_of_week') return p.day === dow
+      if (p.pattern === 'day_of_month') {
+        const win = p.window ?? 0
+        // Standard window match
+        if (Math.abs(dom - p.day) <= win) return true
+        // End-of-month: pattern day doesn't exist in this month (e.g. 31st in Feb)
+        if (p.day > daysInMonth && dom === daysInMonth) return true
+        return false
+      }
+      return false
+    })
   })()
 
   const activeSuggestion = matchingSuggestions.find((s) => {

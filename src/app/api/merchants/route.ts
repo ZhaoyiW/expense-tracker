@@ -8,12 +8,15 @@ export async function GET(request: NextRequest) {
     const subCategory = searchParams.get('sub_category')
 
     if (category) {
+      const sixMonthsAgo = new Date()
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
       // Return merchants ranked by frequency for this category/subcategory
       const rows = await prisma.transaction.groupBy({
         by: ['merchant'],
         where: {
           merchant: { not: '' },
           category,
+          date: { gte: sixMonthsAgo },
           ...(subCategory ? { sub_category: subCategory } : {}),
         },
         _count: { merchant: true },
