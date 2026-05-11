@@ -92,6 +92,7 @@ export function TransactionForm({ initial, onSubmit, onCancel }: TransactionForm
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [recentMerchants, setRecentMerchants] = useState<string[]>([])
+  const [categoryMerchants, setCategoryMerchants] = useState<string[]>([])
   const [recurringPatterns, setRecurringPatterns] = useState<RecurringPattern[]>([])
   const [dismissedSuggestion, setDismissedSuggestion] = useState<string | null>(null)
 
@@ -178,6 +179,17 @@ export function TransactionForm({ initial, onSubmit, onCancel }: TransactionForm
   useEffect(() => {
     if (!subCategories.includes(subCategory)) setSubCategory('')
   }, [category])
+
+  // Fetch top merchants for the selected category/subcategory
+  useEffect(() => {
+    if (!category) { setCategoryMerchants([]); return }
+    const params = new URLSearchParams({ category })
+    if (subCategory) params.set('sub_category', subCategory)
+    fetch(`/api/merchants?${params}`)
+      .then((r) => r.json())
+      .then((data) => setCategoryMerchants(data.merchants || []))
+      .catch(() => {})
+  }, [category, subCategory])
 
   // Find recurring patterns that match the selected date
   const matchingSuggestions = (() => {
@@ -397,10 +409,10 @@ export function TransactionForm({ initial, onSubmit, onCancel }: TransactionForm
                 </div>
               )}
             </div>
-            {/* Recent merchants chips (shown when input is empty) */}
-            {!merchant && recentMerchants.length > 0 && (
+            {/* Merchant chips — category-based when category selected, else recent */}
+            {!merchant && (categoryMerchants.length > 0 || recentMerchants.length > 0) && (
               <div className="flex gap-2 mt-2 overflow-x-auto chips-scroll pb-1">
-                {recentMerchants.map((m) => (
+                {(categoryMerchants.length > 0 ? categoryMerchants : recentMerchants).map((m) => (
                   <button
                     key={m}
                     type="button"
