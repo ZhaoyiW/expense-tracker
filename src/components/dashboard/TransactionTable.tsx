@@ -40,6 +40,8 @@ interface TransactionTableProps {
   showActions?: boolean
   pageSize?: number
   flatMode?: boolean  // flat list (no date groups), shows merchant
+  initialSortKey?: SortKey
+  initialSortDir?: SortDir
 }
 
 type SortKey = 'date' | 'amount'
@@ -242,9 +244,11 @@ export function TransactionTable({
   showActions = false,
   pageSize = 20,
   flatMode = false,
+  initialSortKey = 'date',
+  initialSortDir = 'desc',
 }: TransactionTableProps) {
-  const [sortKey, setSortKey] = useState<SortKey>('date')
-  const [sortDir, setSortDir] = useState<SortDir>('desc')
+  const [sortKey, setSortKey] = useState<SortKey>(initialSortKey)
+  const [sortDir, setSortDir] = useState<SortDir>(initialSortDir)
   const [page, setPage] = useState(1)
   const [toggledKeys, setToggledKeys] = useState<Set<string>>(new Set())
   const [expandedNoteIds, setExpandedNoteIds] = useState<Set<number>>(new Set())

@@ -192,7 +192,7 @@ export default function DashboardPage() {
                 </span>
               </h2>
             </div>
-            <TransactionTable transactions={dashboardData.transactions} flatMode pageSize={10} />
+            <TransactionTable transactions={dashboardData.transactions} flatMode pageSize={10} initialSortKey="amount" initialSortDir="desc" />
           </motion.div>
         </>
       ) : (
