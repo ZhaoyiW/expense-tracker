@@ -29,6 +29,7 @@ export const CATEGORY_OPTIONS: Record<string, Record<string, string[]>> = {
     Salary: ['Joy', 'Tan'],
     Financial: ['Interest', 'Tax Return'],
     Selling: ['Second Hand'],
+    Transfer: ['Deposit', 'Healthcare', 'Partner Support', 'Split Bill', 'Rewards', 'Other'],
   },
 }
 
