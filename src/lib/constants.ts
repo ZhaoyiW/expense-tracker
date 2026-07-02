@@ -15,7 +15,7 @@ export const CATEGORY_OPTIONS: Record<string, Record<string, string[]>> = {
       'Tolls',
     ],
     Entertainment: ['Movie', 'Concert', 'Event', 'Musical'],
-    Healthcare: ['Pharmacy', 'Dental Care', 'Eye Care', 'Knee Care', 'Physical Exam'],
+    Healthcare: ['Pharmacy', 'Dental Care', 'Eye Care', 'Knee Care', 'Physical Exam', 'Health Insurance'],
     Pet: ['Daycare', 'Vet & Medical', 'Pet Insurance', 'Grooming', 'Supplies', 'Gifts & Souvenirs', 'Other'],
     Shopping: ['Clothes', 'Electronics', 'Home & Living', 'Skincare', 'Hobbies', 'Gifts & Souvenirs', 'Other'],
     'Self-care': ['Haircut', 'Spa', 'Work Out'],
