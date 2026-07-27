@@ -304,6 +304,11 @@ export default function InvestmentPage() {
   const availableYears = [...new Set(allMonthGroups.map((g) => parseInt(g.month.slice(0, 4))))].sort((a, b) => b - a)
   const monthGroups = allMonthGroups.filter((g) => g.month.startsWith(String(selectedYear)))
 
+  const yearDeposited = monthGroups.reduce((s, g) => s + g.deposited, 0)
+  const yearWithdrawn = monthGroups.reduce((s, g) => s + g.withdrawn, 0)
+  const yearNet = yearDeposited - yearWithdrawn
+  const yearEndBalance = monthGroups.length > 0 ? monthGroups[0].endBalance : 0
+
   // Summary totals for filtered view
   const filteredDeposited = filteredTxs.filter((t) => t.type === 'deposit').reduce((s, t) => s + t.amount, 0)
   const filteredWithdrawn = filteredTxs.filter((t) => t.type === 'withdraw').reduce((s, t) => s + t.amount, 0)
@@ -501,6 +506,21 @@ export default function InvestmentPage() {
               </div>
             </div>
           ))}
+          {monthGroups.length > 0 && (
+            <div className="px-4 py-3 bg-mo-bg">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-semibold text-mo-text">{selectedYear} Total</span>
+                <span className="text-sm font-bold text-mo-text">{fmt$(yearEndBalance)}</span>
+              </div>
+              <div className="flex gap-3 text-xs">
+                <span className="text-income-dark font-medium">+{fmt$(yearDeposited)}</span>
+                {yearWithdrawn > 0 && <span className="text-expense-dark font-medium">−{fmt$(yearWithdrawn)}</span>}
+                <span className={clsx('font-semibold', yearNet >= 0 ? 'text-income-dark' : 'text-expense-dark')}>
+                  net {yearNet >= 0 ? '+' : '−'}{fmt$(Math.abs(yearNet))}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Desktop */}
@@ -534,6 +554,21 @@ export default function InvestmentPage() {
                 </tr>
               ))}
             </tbody>
+            {monthGroups.length > 0 && (
+              <tfoot>
+                <tr className="border-t-2 border-mo-border bg-mo-bg">
+                  <td className="px-5 py-3 text-sm font-bold text-mo-text">{selectedYear} Total</td>
+                  <td className="px-5 py-3 text-right text-sm font-bold text-income-dark">+{fmt$(yearDeposited)}</td>
+                  <td className="px-5 py-3 text-right text-sm font-bold text-expense-dark">
+                    {yearWithdrawn > 0 ? `−${fmt$(yearWithdrawn)}` : '—'}
+                  </td>
+                  <td className={clsx('px-5 py-3 text-right text-sm font-bold', yearNet >= 0 ? 'text-income-dark' : 'text-expense-dark')}>
+                    {yearNet >= 0 ? '+' : '−'}{fmt$(Math.abs(yearNet))}
+                  </td>
+                  <td className="px-5 py-3 text-right text-sm font-bold text-mo-text">{fmt$(yearEndBalance)}</td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       </div>
