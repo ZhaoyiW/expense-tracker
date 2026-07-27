@@ -10,6 +10,7 @@ export const CATEGORY_OPTIONS: Record<string, Record<string, string[]>> = {
       'Auto Insurance',
       'Lease',
       'Maintenance',
+      'Car Wash',
       'Moving',
       'Registration & Fees',
       'Tolls',
