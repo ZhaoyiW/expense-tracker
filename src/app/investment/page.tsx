@@ -7,7 +7,7 @@ import {
   ResponsiveContainer, ReferenceLine,
 } from 'recharts'
 import clsx from 'clsx'
-import { Plus, X } from 'lucide-react'
+import { Plus, X, Pencil, Trash2 } from 'lucide-react'
 import { DatePickerInput } from '@/components/ui/DatePickerInput'
 
 interface BalancePoint {
@@ -74,12 +74,19 @@ function SummaryCard({ label, value, sub, color }: { label: string; value: strin
 const CONTRIBUTORS = ['Joy', 'Mom']
 const today = format(new Date(), 'yyyy-MM-dd')
 
-function AddTransactionModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
-  const [date, setDate] = useState(today)
-  const [amount, setAmount] = useState('')
-  const [type, setType] = useState<'deposit' | 'withdraw'>('deposit')
-  const [contributor, setContributor] = useState('Joy')
-  const [note, setNote] = useState('')
+interface TxModalProps {
+  onClose: () => void
+  onSaved: () => void
+  initial?: InvestmentTx
+}
+
+function TransactionModal({ onClose, onSaved, initial }: TxModalProps) {
+  const isEdit = !!initial
+  const [date, setDate] = useState(initial?.date ?? today)
+  const [amount, setAmount] = useState(initial ? String(initial.amount) : '')
+  const [type, setType] = useState<'deposit' | 'withdraw'>((initial?.type as 'deposit' | 'withdraw') ?? 'deposit')
+  const [contributor, setContributor] = useState(initial?.contributor ?? 'Joy')
+  const [note, setNote] = useState(initial?.note ?? '')
   const [saving, setSaving] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
@@ -87,8 +94,10 @@ function AddTransactionModal({ onClose, onSaved }: { onClose: () => void; onSave
     if (!amount || parseFloat(amount) <= 0) return
     setSaving(true)
     try {
-      const res = await fetch('/api/investment', {
-        method: 'POST',
+      const url = isEdit ? `/api/investment/${initial!.id}` : '/api/investment'
+      const method = isEdit ? 'PUT' : 'POST'
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ date, amount: parseFloat(amount), type, contributor, note }),
       })
@@ -106,7 +115,7 @@ function AddTransactionModal({ onClose, onSaved }: { onClose: () => void; onSave
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-mo-card rounded-t-3xl sm:rounded-3xl border border-mo-border shadow-card w-full sm:max-w-md p-6 z-10">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-base font-semibold text-mo-text">Add Transaction</h2>
+          <h2 className="text-base font-semibold text-mo-text">{isEdit ? 'Edit Transaction' : 'Add Transaction'}</h2>
           <button onClick={onClose} className="text-mo-muted hover:text-mo-text transition-colors">
             <X size={18} />
           </button>
@@ -208,7 +217,7 @@ function AddTransactionModal({ onClose, onSaved }: { onClose: () => void; onSave
             disabled={saving || !amount}
             className="w-full py-3 rounded-2xl bg-brand text-white text-sm font-semibold disabled:opacity-50 transition-opacity"
           >
-            {saving ? 'Saving…' : 'Save Transaction'}
+            {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Save Transaction'}
           </button>
         </form>
       </div>
@@ -220,8 +229,16 @@ export default function InvestmentPage() {
   const [data, setData] = useState<InvestmentData | null>(null)
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [editingTx, setEditingTx] = useState<InvestmentTx | null>(null)
   const [selectedContributor, setSelectedContributor] = useState<string | null>(null)
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const [txPage, setTxPage] = useState(0)
+
+  async function handleDelete(id: number) {
+    if (!confirm('Delete this transaction?')) return
+    await fetch(`/api/investment/${id}`, { method: 'DELETE' })
+    loadData()
+  }
 
   function loadData() {
     setLoading(true)
@@ -247,6 +264,10 @@ export default function InvestmentPage() {
   const filteredTxs = selectedContributor
     ? data.transactions.filter((t) => t.contributor === selectedContributor)
     : data.transactions
+
+  const TX_PAGE_SIZE = 10
+  const txTotalPages = Math.ceil(filteredTxs.length / TX_PAGE_SIZE)
+  const pagedTxs = filteredTxs.slice(txPage * TX_PAGE_SIZE, (txPage + 1) * TX_PAGE_SIZE)
 
   // Build monthly groups from filtered transactions (desc → reverse for asc processing)
   const txAsc = [...filteredTxs].reverse()
@@ -293,9 +314,16 @@ export default function InvestmentPage() {
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-[1200px]">
       {showModal && (
-        <AddTransactionModal
+        <TransactionModal
           onClose={() => setShowModal(false)}
           onSaved={() => { setShowModal(false); loadData() }}
+        />
+      )}
+      {editingTx && (
+        <TransactionModal
+          initial={editingTx}
+          onClose={() => setEditingTx(null)}
+          onSaved={() => { setEditingTx(null); loadData() }}
         />
       )}
 
@@ -378,7 +406,7 @@ export default function InvestmentPage() {
           <h2 className="text-sm font-semibold text-mo-text">By Contributor</h2>
           {selectedContributor && (
             <button
-              onClick={() => setSelectedContributor(null)}
+              onClick={() => { setSelectedContributor(null); setTxPage(0) }}
               className="text-xs text-mo-muted hover:text-mo-text flex items-center gap-1 transition-colors"
             >
               <X size={12} /> Clear
@@ -395,7 +423,7 @@ export default function InvestmentPage() {
               <button
                 key={c.name}
                 type="button"
-                onClick={() => setSelectedContributor(isActive ? null : c.name)}
+                onClick={() => { setSelectedContributor(isActive ? null : c.name); setTxPage(0) }}
                 className={clsx(
                   'w-full text-left rounded-2xl p-3 -mx-3 transition-all',
                   isActive ? 'bg-mo-bg ring-1 ring-mo-border' : 'hover:bg-mo-bg/60',
@@ -508,6 +536,130 @@ export default function InvestmentPage() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Individual transactions */}
+      <div className="bg-mo-card rounded-3xl border border-mo-border shadow-card overflow-hidden">
+        <div className="px-5 py-4 border-b border-mo-border">
+          <h2 className="text-sm font-semibold text-mo-text">
+            Transactions
+            <span className="ml-2 text-xs font-normal text-mo-muted">({filteredTxs.length})</span>
+          </h2>
+        </div>
+
+        {/* Mobile */}
+        <div className="sm:hidden divide-y divide-mo-border">
+          {pagedTxs.map((t) => (
+            <div key={t.id} className="px-4 py-3 flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className={clsx('text-xs font-semibold', t.type === 'deposit' ? 'text-income-dark' : 'text-expense-dark')}>
+                    {t.type === 'deposit' ? '↑' : '↓'} {fmt$(t.amount)}
+                  </span>
+                  <span className="text-xs text-mo-muted">{t.contributor}</span>
+                </div>
+                <div className="text-xs text-mo-muted mt-0.5">
+                  {format(parseISO(t.date), 'MMM d, yyyy')}
+                  {t.note && <span className="ml-1.5 italic">· {t.note}</span>}
+                </div>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => setEditingTx(t)}
+                  className="p-1.5 rounded-xl text-mo-muted hover:text-mo-text hover:bg-mo-bg transition-colors"
+                >
+                  <Pencil size={13} />
+                </button>
+                <button
+                  onClick={() => handleDelete(t.id)}
+                  className="p-1.5 rounded-xl text-mo-muted hover:text-expense-dark hover:bg-expense-subtle transition-colors"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop */}
+        <div className="hidden sm:block overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-mo-border bg-mo-bg">
+                <th className="px-5 py-3 text-left text-xs font-medium text-mo-muted">Date</th>
+                <th className="px-5 py-3 text-left text-xs font-medium text-mo-muted">Contributor</th>
+                <th className="px-5 py-3 text-left text-xs font-medium text-mo-muted">Type</th>
+                <th className="px-5 py-3 text-right text-xs font-medium text-mo-muted">Amount</th>
+                <th className="px-5 py-3 text-left text-xs font-medium text-mo-muted">Note</th>
+                <th className="px-5 py-3" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-mo-border">
+              {pagedTxs.map((t) => (
+                <tr key={t.id} className="hover:bg-mo-bg transition-colors group">
+                  <td className="px-5 py-3 text-sm text-mo-text">{format(parseISO(t.date), 'MMM d, yyyy')}</td>
+                  <td className="px-5 py-3 text-sm text-mo-text">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full" style={{ background: CONTRIBUTOR_COLORS[t.contributor] ?? '#A89880' }} />
+                      {t.contributor}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3 text-sm">
+                    <span className={clsx('font-medium', t.type === 'deposit' ? 'text-income-dark' : 'text-expense-dark')}>
+                      {t.type === 'deposit' ? '↑ Deposit' : '↓ Withdraw'}
+                    </span>
+                  </td>
+                  <td className={clsx('px-5 py-3 text-sm text-right font-semibold', t.type === 'deposit' ? 'text-income-dark' : 'text-expense-dark')}>
+                    {t.type === 'deposit' ? '+' : '−'}{fmt$(t.amount)}
+                  </td>
+                  <td className="px-5 py-3 text-sm text-mo-muted italic">{t.note || '—'}</td>
+                  <td className="px-5 py-3">
+                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => setEditingTx(t)}
+                        className="p-1.5 rounded-xl text-mo-muted hover:text-mo-text hover:bg-mo-accent-light transition-colors"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(t.id)}
+                        className="p-1.5 rounded-xl text-mo-muted hover:text-expense-dark hover:bg-expense-subtle transition-colors"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        {txTotalPages > 1 && (
+          <div className="px-5 py-3 border-t border-mo-border flex items-center justify-between">
+            <span className="text-xs text-mo-muted">
+              {txPage * TX_PAGE_SIZE + 1}–{Math.min((txPage + 1) * TX_PAGE_SIZE, filteredTxs.length)} of {filteredTxs.length}
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setTxPage((p) => Math.max(0, p - 1))}
+                disabled={txPage === 0}
+                className="p-1.5 rounded-xl text-mo-muted hover:text-mo-text hover:bg-mo-bg disabled:opacity-30 transition-colors"
+              >
+                ‹
+              </button>
+              <span className="text-xs text-mo-muted px-1">{txPage + 1} / {txTotalPages}</span>
+              <button
+                onClick={() => setTxPage((p) => Math.min(txTotalPages - 1, p + 1))}
+                disabled={txPage >= txTotalPages - 1}
+                className="p-1.5 rounded-xl text-mo-muted hover:text-mo-text hover:bg-mo-bg disabled:opacity-30 transition-colors"
+              >
+                ›
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
