@@ -29,6 +29,8 @@ const formatCurrency = (value: number) =>
 const labelFormatter = (v: number) =>
   v >= 1000 ? `$${(v / 1000).toFixed(1)}k` : `$${v.toFixed(0)}`
 
+const OTHER_KEY = '__other__'
+
 function HorizontalBarChart({
   data,
   color,
@@ -55,11 +57,28 @@ function HorizontalBarChart({
     )
   }
 
+  const hasMore = data.length > DEFAULT_SHOW
+  const top = data.slice(0, DEFAULT_SHOW)
+  const rest = data.slice(DEFAULT_SHOW)
+  const otherAmount = rest.reduce((s, c) => s + c.amount, 0)
+
+  const visible: CategoryAmount[] = showAll
+    ? data
+    : hasMore
+      ? [...top, { category: OTHER_KEY, amount: otherAmount }]
+      : top
+
+  // Fit Y-axis to the longest label (approx 7px per char at font-size 11)
+  const yAxisWidth = Math.min(160, Math.max(90,
+    ...visible.map((e) =>
+      (e.category === OTHER_KEY ? `Other (${rest.length})` : e.category).length * 7
+    )
+  ))
+
   const handleClick = (entry: { category: string }) => {
+    if (entry.category === OTHER_KEY) return
     if (onSelect) onSelect(selected === entry.category ? '' : entry.category)
   }
-
-  const visible = showAll ? data : data.slice(0, DEFAULT_SHOW)
 
   return (
     <div className="flex-1 min-w-0">
@@ -68,7 +87,7 @@ function HorizontalBarChart({
         <BarChart
           data={visible}
           layout="vertical"
-          margin={{ left: 0, right: total ? 90 : 60, top: 0, bottom: 0 }}
+          margin={{ left: 0, right: total ? 90 : 64, top: 0, bottom: 0 }}
           onClick={(e) => e?.activePayload && handleClick(e.activePayload[0].payload)}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#E2D9D0" horizontal={false} />
@@ -82,13 +101,15 @@ function HorizontalBarChart({
           <YAxis
             type="category"
             dataKey="category"
+            tickFormatter={(v) => v === OTHER_KEY ? `Other (${rest.length})` : v}
             tick={{ fontSize: 11, fill: '#8A7F78' }}
             tickLine={false}
             axisLine={false}
-            width={90}
+            width={yAxisWidth}
           />
           <Tooltip
             formatter={(value: number) => [formatCurrency(value), 'Amount']}
+            labelFormatter={(label) => label === OTHER_KEY ? `Other (${rest.length} categories)` : label}
             contentStyle={{ borderRadius: '12px', border: '1px solid #E2D9D0', fontSize: 12, background: '#FDFCFB' }}
           />
           <Bar dataKey="amount" radius={[0, 4, 4, 0]} cursor="pointer">
@@ -97,8 +118,10 @@ function HorizontalBarChart({
               position="right"
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               content={(props: any) => {
-                const { x, y, width, height, value } = props
-                const label = total && total > 0
+                const { x, y, width, height, value, index } = props
+                const entry = visible[index]
+                const isOther = entry?.category === OTHER_KEY
+                const label = total && total > 0 && !isOther
                   ? `${labelFormatter(value)} (${Math.round((value / total) * 100)}%)`
                   : labelFormatter(value)
                 return (
@@ -111,14 +134,20 @@ function HorizontalBarChart({
             {visible.map((entry) => (
               <Cell
                 key={entry.category}
-                fill={color}
-                opacity={!selected || selected === entry.category ? 1 : 0.3}
+                fill={entry.category === OTHER_KEY ? '#C8BFB8' : color}
+                opacity={
+                  entry.category === OTHER_KEY
+                    ? 0.7
+                    : !selected || selected === entry.category
+                      ? 1
+                      : 0.3
+                }
               />
             ))}
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-      {data.length > DEFAULT_SHOW && (
+      {hasMore && (
         <button
           onClick={() => setShowAll((v) => !v)}
           className="mt-2 text-xs text-brand-dark font-medium hover:underline"

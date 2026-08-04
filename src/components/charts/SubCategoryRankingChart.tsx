@@ -14,6 +14,9 @@ import {
 } from 'recharts'
 import { SubCategoryAmount } from '@/types'
 
+const DEFAULT_SHOW = 5
+const OTHER_KEY = '__other__'
+
 interface SubCategoryRankingChartProps {
   expenseBySubCategory: SubCategoryAmount[]
   incomeBySubCategory: SubCategoryAmount[]
@@ -51,11 +54,28 @@ function SubCatChart({
     )
   }
 
+  const hasMore = data.length > DEFAULT_SHOW
+  const top = data.slice(0, DEFAULT_SHOW)
+  const rest = data.slice(DEFAULT_SHOW)
+  const otherAmount = rest.reduce((s, c) => s + c.amount, 0)
+
+  const visible: SubCategoryAmount[] = showAll
+    ? data
+    : hasMore
+      ? [...top, { sub_category: OTHER_KEY, amount: otherAmount }]
+      : top
+
+  // Fit Y-axis to the longest label (approx 7px per char at font-size 11)
+  const yAxisWidth = Math.min(160, Math.max(90,
+    ...visible.map((e) =>
+      (e.sub_category === OTHER_KEY ? `Other (${rest.length})` : e.sub_category).length * 7
+    )
+  ))
+
   const handleClick = (entry: { sub_category: string }) => {
+    if (entry.sub_category === OTHER_KEY) return
     if (onSelect) onSelect(selected === entry.sub_category ? '' : entry.sub_category)
   }
-
-  const visible = showAll ? data : data.slice(0, 5)
 
   return (
     <div className="flex-1 min-w-0">
@@ -78,13 +98,15 @@ function SubCatChart({
           <YAxis
             type="category"
             dataKey="sub_category"
+            tickFormatter={(v) => v === OTHER_KEY ? `Other (${rest.length})` : v}
             tick={{ fontSize: 11, fill: '#8A7F78' }}
             tickLine={false}
             axisLine={false}
-            width={90}
+            width={yAxisWidth}
           />
           <Tooltip
             formatter={(value: number) => [formatCurrency(value), 'Amount']}
+            labelFormatter={(label) => label === OTHER_KEY ? `Other (${rest.length} sub-categories)` : label}
             contentStyle={{ borderRadius: '12px', border: '1px solid #E2D9D0', fontSize: 12, background: '#FDFCFB' }}
           />
           <Bar dataKey="amount" radius={[0, 4, 4, 0]} cursor="pointer">
@@ -97,14 +119,20 @@ function SubCatChart({
             {visible.map((entry) => (
               <Cell
                 key={entry.sub_category}
-                fill={color}
-                opacity={!selected || selected === entry.sub_category ? 1 : 0.3}
+                fill={entry.sub_category === OTHER_KEY ? '#C8BFB8' : color}
+                opacity={
+                  entry.sub_category === OTHER_KEY
+                    ? 0.7
+                    : !selected || selected === entry.sub_category
+                      ? 1
+                      : 0.3
+                }
               />
             ))}
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-      {data.length > 5 && (
+      {hasMore && (
         <button
           onClick={() => setShowAll((v) => !v)}
           className="mt-2 text-xs text-brand-dark font-medium hover:underline"
