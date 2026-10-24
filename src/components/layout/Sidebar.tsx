@@ -2,22 +2,15 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, List, TrendingUp, Wallet, Sparkles, Landmark } from 'lucide-react'
+import { Wallet } from 'lucide-react'
 import clsx from 'clsx'
-
-const navItems = [
-  { href: '/insights', label: 'Insights', icon: Sparkles },
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/transactions', label: 'Transactions', icon: List },
-  { href: '/ytd', label: 'Year-to-Date', icon: TrendingUp },
-  { href: '/investment', label: 'Investment', icon: Landmark },
-]
+import { navItems } from './navItems'
 
 export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="hidden md:flex flex-col w-56 shrink-0 bg-mo-card border-r border-mo-border h-full">
+    <aside className="hidden md:flex duo-rail:hidden flex-col w-56 shrink-0 bg-mo-card border-r border-mo-border h-full">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 py-5 border-b border-mo-border">
         <div className="w-8 h-8 rounded-2xl bg-brand flex items-center justify-center shadow-soft">

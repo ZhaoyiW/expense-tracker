@@ -156,7 +156,7 @@ export function SubCategoryRankingChart({
   return (
     <div className="bg-mo-card rounded-3xl border border-mo-border shadow-card px-2 py-5">
       <h3 className="text-sm font-semibold text-mo-text mb-4 px-3">Sub-category Breakdown</h3>
-      <div className="flex gap-8 flex-col lg:flex-row">
+      <div className="flex gap-8 flex-col lg:flex-row duo-inner-l:flex-row">
         <SubCatChart
           data={expenseBySubCategory.slice(0, 10)}
           color="#A89880"

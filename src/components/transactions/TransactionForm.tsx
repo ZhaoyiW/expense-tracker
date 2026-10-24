@@ -263,8 +263,8 @@ export function TransactionForm({ initial, onSubmit, onCancel }: TransactionForm
   const labelClass = 'block text-xs font-semibold text-mo-muted uppercase tracking-wide mb-2'
 
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4">
-      <div className="bg-mo-card w-full max-w-2xl rounded-t-4xl md:rounded-3xl shadow-fab max-h-[92vh] flex flex-col overflow-x-hidden">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-end md:items-center duo-inner-p:items-center justify-center p-0 md:p-4 duo-inner-p:p-4">
+      <div className="bg-mo-card w-full max-w-2xl rounded-t-4xl md:rounded-3xl duo-inner-p:rounded-3xl shadow-fab max-h-[92vh] flex flex-col overflow-x-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-mo-border shrink-0">
           <h2 className="text-base font-semibold text-mo-text">

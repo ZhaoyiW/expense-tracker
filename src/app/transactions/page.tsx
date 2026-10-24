@@ -115,7 +115,7 @@ export default function TransactionsPage() {
       </div>
 
       {/* Filter bar */}
-      <div className="bg-mo-card rounded-3xl border border-mo-border shadow-soft p-3.5 flex items-end gap-3">
+      <div className="bg-mo-card rounded-3xl border border-mo-border shadow-soft p-3.5 flex flex-wrap items-end gap-3">
         <div className="shrink-0">
           <label className="text-xs font-medium text-mo-muted mb-1 block">Month</label>
           <MonthSelector value={selectedMonth} onChange={(m) => { setSelectedMonth(m);  }} allowAllTime />
@@ -236,7 +236,7 @@ export default function TransactionsPage() {
             />
             {/* Sheet */}
             <motion.div
-              className="fixed bottom-0 left-0 right-0 z-50 bg-mo-card rounded-t-3xl p-6 pb-10 space-y-5 shadow-xl"
+              className="fixed bottom-0 left-0 right-0 z-50 bg-mo-card rounded-t-3xl p-6 pb-10 space-y-5 shadow-xl duo-inner-p:max-w-lg duo-inner-p:mx-auto duo-inner-l:max-w-lg duo-inner-l:mx-auto"
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
