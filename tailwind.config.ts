@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss'
+import { DUO_SCREENS } from './src/lib/duoLayout'
 
 const config: Config = {
   content: [
@@ -8,6 +9,8 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      // Appended after sm/md/lg, so duo-* classes override them
+      screens: DUO_SCREENS,
       colors: {
         mo: {
           bg: '#F7F3EF',

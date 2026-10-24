@@ -322,7 +322,7 @@ export function YtdCharts({ data, year }: YtdChartsProps) {
       </div>
 
       {/* Category breakdowns */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 duo-inner-l:grid-cols-2 gap-6">
         {/* Expense by category */}
         <div className="bg-mo-card rounded-3xl border border-mo-border p-6">
           <h3 className="text-sm font-semibold text-mo-text mb-1">Expense by Category</h3>

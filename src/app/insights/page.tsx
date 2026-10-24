@@ -248,7 +248,7 @@ export default function InsightsPage() {
         <p className="text-sm text-mo-muted mt-0.5">Recent patterns and trends in your spending</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 duo-inner-l:grid-cols-3 gap-3">
         {cards.map((card, i) => (
           <InsightCard key={i} {...card} />
         ))}

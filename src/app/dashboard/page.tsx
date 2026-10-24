@@ -138,7 +138,7 @@ export default function DashboardPage() {
 
           {/* Row 2: Line + Payment charts */}
           <motion.div custom={1} variants={fadeUp} initial="hidden" animate="visible"
-            className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            className="grid grid-cols-1 md:grid-cols-2 duo-inner-p:grid-cols-2 gap-4">
             <CumulativeExpenseChart
               data={dashboardData.dailyCumulative}
               prevData={dashboardData.prevDailyCumulative}

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { BottomNav } from '@/components/layout/BottomNav'
+import { NavRail } from '@/components/layout/NavRail'
 import { SwRegister } from '@/components/layout/SwRegister'
 
 export const metadata: Metadata = {
@@ -28,11 +29,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
-      <body className="flex h-screen overflow-hidden bg-mo-bg">
+      <body className="flex h-dvh overflow-hidden bg-mo-bg">
         <Sidebar />
-        <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
+        <main className="flex-1 min-w-0 overflow-y-auto pb-20 md:pb-0 duo-rail:pb-0">
           {children}
         </main>
+        <NavRail />
         <BottomNav />
         <SwRegister />
       </body>
