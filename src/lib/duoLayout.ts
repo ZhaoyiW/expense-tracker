@@ -1,22 +1,27 @@
 // iPhone Duo display detection, as CSS media queries.
 //
-// Same queries as weight_control/app/lib/duoLayout.ts — keep the two in sync.
-// They're registered as Tailwind screens in tailwind.config.ts so layout
-// switches in CSS (no flash of the phone layout before hydration).
+// Registered as Tailwind screens in tailwind.config.ts so layout switches in
+// CSS (no flash of the phone layout before hydration).
 //
-// The numbers come from WebKit's published Safari viewport table for the Duo,
-// not a stable Apple API, so if Safari's viewport sizes change only these
-// strings need updating.
+// Measured on a Duo in Safari: outer portrait 382×590, inner landscape 951×538.
+// Opened from the home screen the viewport is bigger: no URL bar, and on the
+// outer display no Safari toolbar column on the right (screen is 466 wide).
+// So the queries don't pin exact sizes; they use orientation, aspect ratio and
+// a loose width range, which hold in both Safari and home-screen mode.
 //
-// A Duo outer display (382pt) overlaps a normal iPhone's portrait width, so
-// outerPortrait adds a min-aspect-ratio check: the outer display is squatter
-// (~0.62) than any current iPhone in portrait (~0.46–0.56).
+// - Outer portrait is squat (~0.65–0.69); normal iPhones in portrait are ≤0.56.
+// - In landscape, normal iPhones are wider than 2:1; the Duo's displays aren't.
+// - pointer: coarse keeps resized desktop windows out.
+// - screen.width/height aren't usable: Safari reported the outer screen's
+//   size while on the inner display.
+
+const touch = '(pointer: coarse)'
 
 export const DUO_QUERIES = {
-  outerPortrait: '(min-width: 370px) and (max-width: 420px) and (min-aspect-ratio: 3/5)',
-  outerLandscape: '(min-width: 570px) and (max-width: 620px) and (orientation: landscape)',
-  innerPortrait: '(min-width: 640px) and (max-width: 700px) and (orientation: portrait)',
-  innerLandscape: '(min-width: 900px) and (max-width: 1000px) and (orientation: landscape) and (max-aspect-ratio: 9/5)',
+  outerPortrait: `${touch} and (orientation: portrait) and (max-width: 520px) and (min-aspect-ratio: 3/5)`,
+  outerLandscape: `${touch} and (orientation: landscape) and (max-width: 799px) and (max-aspect-ratio: 2/1)`,
+  innerPortrait: `${touch} and (orientation: portrait) and (min-width: 560px) and (max-width: 760px)`,
+  innerLandscape: `${touch} and (orientation: landscape) and (min-width: 800px) and (max-width: 1100px) and (max-aspect-ratio: 2/1)`,
 } as const
 
 const q = DUO_QUERIES
